@@ -12,6 +12,7 @@ import AdminRequests from './pages/admin/AdminRequests';
 import AdminRequestDetail from './pages/admin/AdminRequestDetail';
 import AdminDocuments from './pages/admin/AdminDocuments';
 import ContactSupport from './pages/ContactSupport';
+import NotFound from './pages/NotFound';
 
 function App() {
   return (
@@ -37,6 +38,8 @@ function App() {
           <Route path="/admin/requests/:id" element={<AdminRequestDetail />} />
           <Route path="/admin/documents" element={<AdminDocuments />} />
         </Route>
+
+        <Route path="*" element={<NotFound />} />
       </Routes>
     </Router>
   );

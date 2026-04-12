@@ -3,6 +3,10 @@ import { FileText, Download, ExternalLink, Trash2, Search, Filter, X } from 'luc
 import api from '../../api/axios';
 import Navbar from '../../components/layout/Navbar';
 import { DOCUMENT_TYPES, STATUS_COLORS, STATUS_LABELS } from '../../data/constants';
+import { Toast } from '../../components/ui/Toast';
+import { useToast } from '../../hooks/useToast';
+import { LoadingSpinner } from '../../components/ui/LoadingSpinner';
+import { ConfirmDialog } from '../../components/ui/ConfirmDialog';
 
 interface Document {
   id: string;
@@ -43,6 +47,8 @@ const AdminDocuments = () => {
   const [search, setSearch] = useState('');
   const [typeFilter, setTypeFilter] = useState('');
   const [statusFilter, setStatusFilter] = useState('');
+  const { toast, showToast, hideToast } = useToast();
+  const [documentToDelete, setDocumentToDelete] = useState<string | null>(null);
 
   const fetchDocuments = async () => {
     try {
@@ -55,8 +61,7 @@ const AdminDocuments = () => {
       const response = await api.get(query);
       setDocuments(response.data);
     } catch (err: any) {
-      console.error('Error fetching documents:', err);
-      setError('Failed to load documents');
+      showToast(err.response?.data?.message || 'Failed to load documents', 'error');
     } finally {
       setLoading(false);
     }
@@ -67,14 +72,14 @@ const AdminDocuments = () => {
   }, [typeFilter, statusFilter]);
 
   const handleDelete = async (id: string) => {
-    if (!window.confirm("Are you sure you want to delete this document? \nThis action cannot be undone.")) return;
     try {
       await api.delete(`/admin/documents/${id}`);
-      alert("Document deleted successfully");
+      showToast("Document deleted successfully", "success");
+      setDocumentToDelete(null);
       fetchDocuments();
     } catch (err: any) {
-      console.error(err);
-      alert(err.response?.data?.message || 'Failed to delete document');
+      showToast(err.response?.data?.message || 'Failed to delete document', "error");
+      setDocumentToDelete(null);
     }
   };
 
@@ -98,6 +103,7 @@ const AdminDocuments = () => {
   return (
     <div className="min-h-screen bg-slate-50 font-sans">
       <Navbar />
+      {toast && <Toast message={toast.message} type={toast.type} onClose={hideToast} />}
       
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <div className="mb-8">
@@ -195,9 +201,8 @@ const AdminDocuments = () => {
               <tbody className="bg-white divide-y divide-slate-200">
                 {loading ? (
                   <tr>
-                    <td colSpan={7} className="px-6 py-12 text-center">
-                      <div className="inline-block animate-spin rounded-full h-8 w-8 border-4 border-slate-200 border-t-blue-600"></div>
-                      <p className="mt-2 text-sm text-slate-500">Loading documents...</p>
+                    <td colSpan={7} className="px-6 py-12">
+                      <LoadingSpinner message="Loading documents..." />
                     </td>
                   </tr>
                 ) : filteredDocs.length === 0 ? (
@@ -317,7 +322,7 @@ const AdminDocuments = () => {
                               <Download className="w-4 h-4" />
                             </a>
                             <button
-                              onClick={() => handleDelete(doc.id)}
+                              onClick={() => setDocumentToDelete(doc.id)}
                               className="p-1.5 text-slate-600 hover:text-red-600 hover:bg-red-50 rounded-md transition-colors"
                               title="Delete"
                             >
@@ -365,6 +370,16 @@ const AdminDocuments = () => {
           </div>
         </div>
       )}
+
+      <ConfirmDialog 
+        isOpen={!!documentToDelete}
+        title="Delete Document"
+        message="Are you sure you want to delete this document? This action cannot be undone."
+        confirmText="Delete"
+        confirmColor="red"
+        onConfirm={() => documentToDelete && handleDelete(documentToDelete)}
+        onCancel={() => setDocumentToDelete(null)}
+      />
     </div>
   );
 };

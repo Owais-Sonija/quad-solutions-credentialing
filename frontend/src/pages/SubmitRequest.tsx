@@ -3,18 +3,17 @@ import { useNavigate } from 'react-router-dom';
 import { ChevronRight, ArrowLeft, UploadCloud, CheckCircle, Loader2, AlertCircle, XCircle } from 'lucide-react';
 import api from '../api/axios';
 import Navbar from '../components/layout/Navbar';
-
 import { US_STATES, REQUEST_TYPES, MEDICAL_SPECIALTIES, DOCUMENT_TYPES } from '../data/constants';
+import { Toast } from '../components/ui/Toast';
+import { useToast } from '../hooks/useToast';
+import { LoadingSpinner } from '../components/ui/LoadingSpinner';
 
 const SubmitRequest = () => {
   const navigate = useNavigate();
   const [step, setStep] = useState(1);
   const [loading, setLoading] = useState(false);
   const [requestId, setRequestId] = useState<string | null>(null);
-  const [error, setError] = useState('');
-  const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
-  
-  const [toast, setToast] = useState<{message: string, type: 'error' | 'success'} | null>(null);
+  const { toast, showToast, hideToast } = useToast();
 
   // Step 1 state
   const [formData, setFormData] = useState({
@@ -38,12 +37,7 @@ const SubmitRequest = () => {
     }
   }, [step, navigate]);
 
-  const showToast = (message: string, type: 'error' | 'success') => {
-    setToast({ message, type });
-    setTimeout(() => {
-      setToast(null);
-    }, 3000);
-  };
+
 
   const validateStep1 = () => {
     const errors: Record<string, string> = {};
@@ -68,7 +62,6 @@ const SubmitRequest = () => {
 
   const handleStep1Submit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setError('');
     
     if (!validateStep1()) {
       return;
@@ -86,8 +79,6 @@ const SubmitRequest = () => {
       };
       
       const response = await api.post('/user/requests', payload);
-      
-      console.log('Full API Response:', response.data);
       const newRequestId = response.data?.id || response.data?.request?.id || response.data?.data?.id;
       
       if (!newRequestId) {
@@ -97,12 +88,8 @@ const SubmitRequest = () => {
       setRequestId(newRequestId);
       setStep(2);
     } catch (err: any) {
-      // Log the exact error response to console
-      console.error('API Error:', err.response?.data || err);
-      
-      // Extract proper error message
       const errorMessage = err.response?.data?.message || err.response?.data?.error || err.message || 'Failed to create request. Please try again.';
-      setError(errorMessage);
+      showToast(errorMessage, 'error');
     } finally {
       setLoading(false);
     }
@@ -203,13 +190,7 @@ const SubmitRequest = () => {
     <div className="min-h-screen bg-slate-50 pb-8">
       <Navbar />
       
-      {/* Toast Notification Menu */}
-      {toast && (
-        <div className={`fixed top-4 right-4 z-50 px-4 py-3 rounded shadow-lg text-white font-medium flex items-center transition-all ${toast.type === 'error' ? 'bg-red-500' : 'bg-green-500'}`}>
-          {toast.type === 'error' ? <AlertCircle className="w-5 h-5 mr-2" /> : <CheckCircle className="w-5 h-5 mr-2" />}
-           {toast.message}
-        </div>
-      )}
+      {toast && <Toast message={toast.message} type={toast.type} onClose={hideToast} />}
 
       <div className="max-w-3xl mx-auto">
         <button onClick={() => navigate('/dashboard')} className="flex items-center text-slate-500 hover:text-slate-800 mb-6 transition-colors">
@@ -220,9 +201,7 @@ const SubmitRequest = () => {
           <h2 className="text-2xl font-bold text-slate-900 text-center mb-6">Submit Credentialing Request</h2>
           {renderProgress()}
 
-          {error && step === 1 && <div className="mb-6 p-4 bg-red-50 text-red-700 rounded-md border border-red-200 break-words">{error}</div>}
-
-          {step === 1 && (
+          {step === 1 && (loading ? <LoadingSpinner message="Submitting your request..." /> : (
             <form onSubmit={handleStep1Submit} className="space-y-6">
               <div className="text-sm text-slate-500 mb-4 pb-2 border-b border-slate-100">
                 <span className="text-red-500">*</span> Required fields
@@ -349,7 +328,7 @@ const SubmitRequest = () => {
                 </button>
               </div>
             </form>
-          )}
+          ))}
 
           {step === 2 && (
             <div className="space-y-6">

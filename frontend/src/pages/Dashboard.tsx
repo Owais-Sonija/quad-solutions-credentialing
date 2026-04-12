@@ -4,6 +4,9 @@ import { FileText, Plus, LogOut } from 'lucide-react';
 import api from '../api/axios';
 import { useAuthStore } from '../store/authStore';
 import type { CredentialingRequest } from '../types/index';
+import { LoadingSpinner } from '../components/ui/LoadingSpinner';
+import { Toast } from '../components/ui/Toast';
+import { useToast } from '../hooks/useToast';
 import Navbar from '../components/layout/Navbar';
 import { STATUS_LABELS, STATUS_COLORS } from '../data/constants';
 
@@ -23,14 +26,13 @@ const Dashboard = () => {
   const navigate = useNavigate();
   const [requests, setRequests] = useState<CredentialingRequest[]>([]);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+  const { toast, showToast, hideToast } = useToast();
 
   useEffect(() => {
     const fetchRequests = async () => {
       try {
         setLoading(true);
         const response = await api.get('/user/requests');
-        console.log('Dashboard API Response:', response.data);
         
         // Extract array depending on response shape safely
         const actualData = response.data?.requests || response.data?.data || response.data;
@@ -39,9 +41,9 @@ const Dashboard = () => {
         } else {
           setRequests([]);
         }
-      } catch (err) {
+      } catch (err: any) {
         console.error('Failed to fetch requests', err);
-        setError('Failed to load requests');
+        showToast(err.response?.data?.message || 'Failed to load requests', 'error');
       } finally {
         setLoading(false);
       }
@@ -59,6 +61,7 @@ const Dashboard = () => {
   return (
     <div className="min-h-screen bg-slate-50">
       <Navbar />
+      {toast && <Toast message={toast.message} type={toast.type} onClose={hideToast} />}
 
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <div className="flex justify-between items-center mb-8">
@@ -69,16 +72,8 @@ const Dashboard = () => {
           </Link>
         </div>
 
-        {error && (
-          <div className="mb-6 p-4 bg-red-50 text-red-700 rounded-md border border-red-200 break-words">
-            {error}
-          </div>
-        )}
-
         {loading ? (
-          <div className="flex justify-center items-center h-64">
-            <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-blue-600"></div>
-          </div>
+          <LoadingSpinner message="Loading your requests..." />
         ) : (requests?.length ?? 0) === 0 ? (
           <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-12 text-center">
             <div className="w-16 h-16 bg-blue-50 rounded-full flex items-center justify-center mx-auto mb-4">
@@ -90,7 +85,7 @@ const Dashboard = () => {
           </div>
         ) : (
           <div className="bg-white shadow-sm border border-slate-200 rounded-lg overflow-hidden">
-            <div className="overflow-x-auto">
+            <div className="overflow-x-auto rounded-lg border border-slate-200">
               <table className="min-w-full divide-y divide-slate-200">
                 <thead className="bg-slate-50">
                   <tr>
@@ -111,7 +106,7 @@ const Dashboard = () => {
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-slate-500">{formatDate((req as any).submitted_at || req.created_at)}</td>
                       <td className="px-6 py-4 whitespace-nowrap">
                         <span className={`px-2.5 py-1 inline-flex text-xs leading-5 font-semibold rounded-full border ${STATUS_COLORS[req.status] || 'bg-gray-100 text-gray-800'}`}>
-                          {STATUS_LABELS[req.status] || req.status}
+                          {STATUS_LABELS[req.status] ?? req.status}
                         </span>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">

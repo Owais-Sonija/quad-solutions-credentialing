@@ -5,6 +5,9 @@ import api from '../../api/axios';
 import { useAuthStore } from '../../store/authStore';
 import Navbar from '../../components/layout/Navbar';
 import { STATUS_LABELS, STATUS_COLORS } from '../../data/constants';
+import { Toast } from '../../components/ui/Toast';
+import { useToast } from '../../hooks/useToast';
+import { LoadingSpinner } from '../../components/ui/LoadingSpinner';
 
 const formatDate = (dateString: string | null | undefined): string => {
   if (!dateString) return 'N/A';
@@ -31,7 +34,7 @@ const AdminDashboard = () => {
   });
   const [requests, setRequests] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+  const { toast, showToast, hideToast } = useToast();
 
   useEffect(() => {
     const fetchDashboardData = async () => {
@@ -40,7 +43,6 @@ const AdminDashboard = () => {
         // Sometimes stats endpoint does not exist yet natively on backends, so we fetch requests
         // and manually map them just like before, but with all strict safeguards!
         const response = await api.get('/admin/requests');
-        console.log('Admin Requests response:', response.data);
         
         let allRequests: any[] = [];
         const data = response.data?.data || response.data?.requests || response.data;
@@ -58,9 +60,8 @@ const AdminDashboard = () => {
         });
         
         setRequests(allRequests);
-      } catch (err) {
-        console.error('Failed to load dashboard data', err);
-        setError('Failed to load dashboard metrics');
+      } catch (err: any) {
+        showToast(err.response?.data?.message || 'Failed to load dashboard data', 'error');
       } finally {
         setLoading(false);
       }
@@ -76,19 +77,12 @@ const AdminDashboard = () => {
   return (
     <div className="min-h-screen bg-slate-100">
       <Navbar />
+      {toast && <Toast message={toast.message} type={toast.type} onClose={hideToast} />}
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <h1 className="text-2xl font-bold text-slate-900 mb-8">Dashboard Overview</h1>
 
-        {error && (
-          <div className="mb-6 p-4 bg-red-50 text-red-700 rounded-md border border-red-200">
-            {error}
-          </div>
-        )}
-
         {loading ? (
-          <div className="flex justify-center items-center h-64">
-            <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-blue-600"></div>
-          </div>
+          <LoadingSpinner message="Loading dashboard..." />
         ) : (
           <>
             <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
@@ -135,7 +129,7 @@ const AdminDashboard = () => {
                 <h3 className="text-lg font-medium text-slate-900">Recent Requests</h3>
                 <Link to="/admin/requests" className="text-sm font-medium text-blue-600 hover:text-blue-800">View all &rarr;</Link>
               </div>
-              <div className="overflow-x-auto">
+              <div className="overflow-x-auto rounded-lg border border-slate-200">
                 <table className="min-w-full divide-y divide-slate-200">
                   <thead className="bg-white">
                     <tr>
@@ -159,7 +153,7 @@ const AdminDashboard = () => {
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap">
                           <span className={`px-2.5 py-1 inline-flex text-xs leading-5 font-semibold rounded-full border ${STATUS_COLORS[req.status] || 'bg-gray-100 text-gray-800'}`}>
-                            {STATUS_LABELS[req.status] || req.status}
+                            {STATUS_LABELS[req.status] ?? req.status}
                           </span>
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap text-sm text-slate-500">

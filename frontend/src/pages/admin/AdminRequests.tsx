@@ -6,6 +6,9 @@ import { useAuthStore } from '../../store/authStore';
 import Navbar from '../../components/layout/Navbar';
 import type { CredentialingRequest } from '../../types/index';
 import { STATUS_LABELS, STATUS_COLORS } from '../../data/constants';
+import { Toast } from '../../components/ui/Toast';
+import { useToast } from '../../hooks/useToast';
+import { LoadingSpinner } from '../../components/ui/LoadingSpinner';
 
 const formatDate = (dateString: string | null | undefined): string => {
   if (!dateString) return 'N/A';
@@ -24,7 +27,7 @@ const AdminRequests = () => {
   const [requests, setRequests] = useState<CredentialingRequest[]>([]);
   const [filteredReqs, setFilteredReqs] = useState<CredentialingRequest[]>([]);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+  const { toast, showToast, hideToast } = useToast();
   const [activeTab, setActiveTab] = useState('All');
   const [searchTerm, setSearchTerm] = useState('');
 
@@ -35,7 +38,6 @@ const AdminRequests = () => {
       try {
         setLoading(true);
         const response = await api.get('/admin/requests');
-        console.log('Admin Requests API Response:', response.data);
         
         let actualData: any[] = [];
         const baseData = response.data?.data || response.data?.requests || response.data;
@@ -45,9 +47,8 @@ const AdminRequests = () => {
         
         setRequests(actualData);
         setFilteredReqs(actualData);
-      } catch (err) {
-        console.error('Failed to load requests', err);
-        setError('Failed to fetch requests list');
+      } catch (err: any) {
+        showToast(err.response?.data?.message || 'Failed to fetch requests', 'error');
       } finally {
         setLoading(false);
       }
@@ -84,6 +85,7 @@ const AdminRequests = () => {
   return (
     <div className="min-h-screen bg-slate-100">
       <Navbar />
+      {toast && <Toast message={toast.message} type={toast.type} onClose={hideToast} />}
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <div className="flex items-center gap-4 mb-6">
           <Link to="/admin/dashboard" className="text-slate-500 hover:text-slate-900">
@@ -91,12 +93,6 @@ const AdminRequests = () => {
           </Link>
           <h1 className="text-2xl font-bold text-slate-900">Manage Requests</h1>
         </div>
-
-        {error && (
-          <div className="mb-6 p-4 bg-red-50 text-red-700 rounded-md border border-red-200">
-            {error}
-          </div>
-        )}
 
         <div className="bg-white shadow-sm border border-slate-200 rounded-lg mb-8">
           <div className="border-b border-slate-200 px-6 py-4 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
@@ -113,7 +109,7 @@ const AdminRequests = () => {
             </div>
             <div className="relative">
               <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                <Search className="h-4 w-4 text-slate-400" />
+                 <Search className="h-4 w-4 text-slate-400" />
               </div>
               <input 
                 type="text" 
@@ -125,11 +121,9 @@ const AdminRequests = () => {
             </div>
           </div>
 
-          <div className="overflow-x-auto min-h-[400px]">
+          <div className="overflow-x-auto min-h-[400px] rounded-lg border border-slate-200">
              {loading ? (
-               <div className="flex justify-center items-center h-64">
-                 <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-blue-600"></div>
-               </div>
+                <LoadingSpinner message="Loading requests..." />
              ) : (
                 <table className="min-w-full divide-y divide-slate-200">
                   <thead className="bg-slate-50">
@@ -157,7 +151,7 @@ const AdminRequests = () => {
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap">
                           <span className={`px-2.5 py-1 inline-flex text-xs leading-5 font-semibold rounded-full border ${STATUS_COLORS[req.status] || 'bg-gray-100 text-gray-800'}`}>
-                            {STATUS_LABELS[req.status] || req.status}
+                            {STATUS_LABELS[req.status] ?? req.status}
                           </span>
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">

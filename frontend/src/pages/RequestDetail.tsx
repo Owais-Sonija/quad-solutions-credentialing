@@ -5,6 +5,9 @@ import api from '../api/axios';
 import type { CredentialingRequest, Document, StatusHistory } from '../types/index';
 import Navbar from '../components/layout/Navbar';
 import { STATUS_LABELS, STATUS_COLORS } from '../data/constants';
+import { LoadingSpinner } from '../components/ui/LoadingSpinner';
+import { Toast } from '../components/ui/Toast';
+import { useToast } from '../hooks/useToast';
 
 
 
@@ -48,20 +51,19 @@ const RequestDetail = () => {
   const [documents, setDocuments] = useState<Document[]>([]);
   const [history, setHistory] = useState<StatusHistory[]>([]);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState('');
+  const { toast, showToast, hideToast } = useToast();
 
   useEffect(() => {
     const fetchData = async () => {
       try {
         const response = await api.get(`/user/requests/${id}`);
-        console.log('Request Detailed Data:', response.data);
         const data = response.data?.data || response.data;
         
         setRequest(data?.request || data);
         setDocuments(data?.documents || []);
         setHistory(data?.status_history || []);
       } catch (err: any) {
-        setError(err.response?.data?.message || 'Failed to fetch details');
+        showToast(err.response?.data?.message || 'Failed to fetch details', 'error');
       } finally {
         setLoading(false);
       }
@@ -69,15 +71,24 @@ const RequestDetail = () => {
     fetchData();
   }, [id]);
 
-  if (loading) return <div className="min-h-screen bg-slate-50 flex items-center justify-center">Loading details...</div>;
-  if (error) return <div className="min-h-screen bg-slate-50 flex items-center justify-center text-red-600">{error}</div>;
-  if (!request) return <div className="min-h-screen bg-slate-50 flex items-center justify-center">Request not found</div>;
+  if (loading) return (
+    <div className="min-h-screen bg-slate-50 flex items-center justify-center">
+       <LoadingSpinner message="Loading request details..." />
+    </div>
+  );
+  if (!request) return (
+    <div className="min-h-screen bg-slate-50 flex flex-col items-center justify-center">
+      {toast && <Toast message={toast.message} type={toast.type} onClose={hideToast} />}
+      {!toast && <div>Request not found</div>}
+    </div>
+  );
 
   const StatusIcon = statusIcons[request.status];
 
   return (
     <div className="min-h-screen bg-slate-50 pb-8">
       <Navbar />
+      {toast && <Toast message={toast.message} type={toast.type} onClose={hideToast} />}
       <div className="max-w-4xl mx-auto mt-8 px-4 sm:px-6 lg:px-8">
         <Link to="/dashboard" className="inline-flex items-center text-slate-500 hover:text-slate-800 mb-6 transition-colors">
           <ArrowLeft className="w-4 h-4 mr-1" /> Back to Dashboard
@@ -91,7 +102,7 @@ const RequestDetail = () => {
             </div>
             <span className={`flex items-center px-3 py-1 rounded-full text-sm font-semibold border ${STATUS_COLORS[request.status] || 'bg-gray-100 text-gray-800'}`}>
               <StatusIcon className="w-4 h-4 mr-1.5" />
-              {STATUS_LABELS[request.status] || request.status}
+              {STATUS_LABELS[request.status] ?? request.status}
             </span>
           </div>
 
@@ -128,7 +139,7 @@ const RequestDetail = () => {
                 <p className="text-slate-500 py-4 text-center bg-slate-50 rounded border border-dashed border-slate-200">No documents attached.</p>
               ) : (
                 <ul className="divide-y divide-slate-100 border border-slate-100 rounded-md">
-                  {documents.map(doc => (
+                  {(documents ?? []).map(doc => (
                     <li key={doc.id} className="py-3 px-4 flex items-center justify-between hover:bg-slate-50 transition-colors">
                       <div className="flex items-center truncate mr-4">
                         <FileText className="w-5 h-5 text-slate-400 mr-3 shrink-0" />

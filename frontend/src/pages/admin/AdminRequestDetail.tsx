@@ -6,6 +6,10 @@ import { useAuthStore } from '../../store/authStore';
 import type { CredentialingRequest, Document, StatusHistory } from '../../types/index';
 import Navbar from '../../components/layout/Navbar';
 import { STATUS_LABELS, STATUS_COLORS } from '../../data/constants';
+import { Toast } from '../../components/ui/Toast';
+import { useToast } from '../../hooks/useToast';
+import { LoadingSpinner } from '../../components/ui/LoadingSpinner';
+import { ConfirmDialog } from '../../components/ui/ConfirmDialog';
 
 const statusIcons: Record<string, any> = {
   pending: Clock,
@@ -56,12 +60,15 @@ const AdminRequestDetail = () => {
   const [documents, setDocuments] = useState<Document[]>([]);
   const [history, setHistory] = useState<StatusHistory[]>([]);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState('');
+  const { toast, showToast, hideToast } = useToast();
   
   // Status Update state
   const [newStatus, setNewStatus] = useState('');
   const [adminNote, setAdminNote] = useState('');
   const [updating, setUpdating] = useState(false);
+  
+  // Dialog state
+  const [showStatusDialog, setShowStatusDialog] = useState(false);
 
   const fetchDetails = async () => {
     try {
@@ -75,7 +82,7 @@ const AdminRequestDetail = () => {
       setHistory(data.status_history ?? []);
       setNewStatus((data.request || data)?.status || '');
     } catch (err: any) {
-      setError(err.response?.data?.message || 'Failed to fetch details');
+      showToast(err.response?.data?.message || 'Failed to fetch details', 'error');
     } finally {
       setLoading(false);
     }
@@ -85,84 +92,90 @@ const AdminRequestDetail = () => {
     fetchDetails();
   }, [id]);
 
-  const handleStatusUpdate = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!newStatus || newStatus === request?.status) return;
-    
-    if (!window.confirm(`Are you sure you want to change the status to ${formatStatus(newStatus)}?`)) {
-      return;
-    }
-
+  const confirmStatusUpdate = async () => {
     setUpdating(true);
+    setShowStatusDialog(false);
     try {
       await api.patch(`/admin/requests/${id}/status`, {
         status: newStatus,
         note: adminNote
       });
       setAdminNote('');
+      showToast("Status updated successfully", "success");
       await fetchDetails();
     } catch (err: any) {
-      alert(err.response?.data?.message || 'Failed to update status');
+      showToast(err.response?.data?.message || 'Failed to update status', 'error');
     } finally {
       setUpdating(false);
     }
   };
 
-  if (loading && !request) return <div className="min-h-screen bg-slate-100 flex items-center justify-center text-slate-500">Loading details...</div>;
-  if (error) return <div className="min-h-screen bg-slate-100 flex items-center justify-center text-red-600">{error}</div>;
-  if (!request) return <div className="min-h-screen bg-slate-100 flex items-center justify-center text-slate-500">Request not found</div>;
+  const handleStatusUpdate = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!newStatus || newStatus === request?.status) return;
+    setShowStatusDialog(true);
+  };
+
+  if (loading && !request) return (
+    <div className="min-h-screen bg-slate-100 flex items-center justify-center">
+      <LoadingSpinner message="Loading request details..." />
+    </div>
+  );
+  if (!request) return (
+    <div className="min-h-screen bg-slate-100 flex items-center justify-center">
+      {toast && <Toast message={toast.message} type={toast.type} onClose={hideToast} />}
+      <span className="text-slate-500">Request not found</span>
+    </div>
+  );
 
   const StatusIcon = statusIcons[request.status] || FileText;
 
   return (
     <div className="min-h-screen bg-slate-100 pb-8">
       <Navbar />
-      <div className="max-w-5xl mx-auto mt-8 px-4 sm:px-6 lg:px-8">
-        <Link to="/admin/requests" className="inline-flex items-center text-slate-500 hover:text-slate-800 mb-6 transition-colors font-medium">
-          <ArrowLeft className="w-5 h-5 mr-1" /> Back to All Requests
+      {toast && <Toast message={toast.message} type={toast.type} onClose={hideToast} />}
+      
+      <div className="max-w-7xl mx-auto mt-8 px-4 sm:px-6 lg:px-8">
+        <Link to="/admin/requests" className="inline-flex items-center text-slate-600 hover:text-slate-900 mb-6 transition-colors font-medium">
+          <ArrowLeft className="w-5 h-5 mr-2" /> Back to Requests
         </Link>
         
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
           {/* Main Info Column */}
-          <div className="lg:col-span-2 space-y-8">
+          <div className="lg:col-span-2 space-y-6">
+            
+            {/* Request Information Card */}
             <div className="bg-white shadow-sm rounded-xl p-6 border border-slate-200">
-              <div className="flex justify-between items-start mb-6 pb-6 border-b border-slate-100">
+              <h2 className="text-xl font-bold text-slate-900 mb-6 border-b border-slate-100 pb-4">Request Information</h2>
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-y-6 gap-x-8">
                 <div>
-                  <h1 className="text-2xl font-bold text-slate-900">{request.user_name}</h1>
-                  <p className="text-slate-500">{request.user_email}</p>
-                </div>
-                <span className={`flex items-center px-3 py-1 rounded-full text-sm font-semibold border ${getStatusColor(request.status)}`}>
-                  <StatusIcon className="w-4 h-4 mr-1.5" />
-                  {formatStatus(request.status)}
-                </span>
-              </div>
-
-              <h3 className="text-lg font-bold text-slate-900 mb-4">Credentialing Details</h3>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-y-6 gap-x-8">
-                <div>
-                  <p className="text-sm text-slate-500 font-medium">Request Type</p>
-                  <p className="text-slate-900 font-medium mt-1">{request.request_type}</p>
+                  <p className="text-sm font-medium text-slate-500">Specialty</p>
+                  <p className="mt-1 text-slate-900 font-medium">{request.specialty || 'N/A'}</p>
                 </div>
                 <div>
-                  <p className="text-sm text-slate-500 font-medium">Specialty</p>
-                  <p className="text-slate-900 font-medium mt-1">{request.specialty}</p>
+                  <p className="text-sm font-medium text-slate-500">NPI Number</p>
+                  <p className="mt-1 text-slate-900 font-medium">{request.npi_number || 'N/A'}</p>
                 </div>
                 <div>
-                  <p className="text-sm text-slate-500 font-medium">NPI Number</p>
-                  <p className="text-slate-900 font-medium mt-1">{request.npi_number}</p>
+                  <p className="text-sm font-medium text-slate-500">License State</p>
+                  <p className="mt-1 text-slate-900 font-medium">{request.license_state || 'N/A'}</p>
                 </div>
                 <div>
-                  <p className="text-sm text-slate-500 font-medium">License State</p>
-                  <p className="text-slate-900 font-medium mt-1">{request.license_state}</p>
+                  <p className="text-sm font-medium text-slate-500">Request Type</p>
+                  <p className="mt-1 text-slate-900 font-medium">{request.request_type || 'N/A'}</p>
                 </div>
-                <div className="md:col-span-2">
-                  <p className="text-sm text-slate-500 font-medium">Submission Date</p>
-                  <p className="text-slate-900 font-medium mt-1">{formatDate((request as any).submitted_at || request.created_at)}</p>
+                <div>
+                  <p className="text-sm font-medium text-slate-500">Submitted Date</p>
+                  <p className="mt-1 text-slate-900 font-medium">{formatDate((request as any).submitted_at || request.created_at)}</p>
+                </div>
+                <div>
+                  <p className="text-sm font-medium text-slate-500">Last Updated</p>
+                  <p className="mt-1 text-slate-900 font-medium">{formatDate(request.updated_at)}</p>
                 </div>
                 {request.notes && (
-                  <div className="md:col-span-2">
-                    <p className="text-sm text-slate-500 font-medium">Applicant Notes</p>
-                    <p className="text-slate-900 mt-1 bg-slate-50 p-4 rounded-md border border-slate-100">{request.notes}</p>
+                  <div className="md:col-span-3">
+                    <p className="text-sm font-medium text-slate-500 mb-1">Notes</p>
+                    <p className="text-slate-900 bg-slate-50 p-4 rounded-md border border-slate-100 italic">{request.notes}</p>
                   </div>
                 )}
               </div>
@@ -198,10 +211,10 @@ const AdminRequestDetail = () => {
                             if (!window.confirm("Are you sure you want to delete this document? \nThis action cannot be undone.")) return;
                             try {
                               await api.delete(`/admin/documents/${doc.id}`);
-                              alert("Document deleted successfully");
+                              showToast("Document deleted successfully", "success");
                               fetchDetails();
                             } catch (err: any) {
-                              alert(err.response?.data?.message || 'Failed to delete document');
+                              showToast(err.response?.data?.message || 'Failed to delete document', "error");
                             }
                           }}
                           className="flex items-center text-red-600 hover:text-red-800 text-sm font-medium bg-red-50 px-3 py-1.5 rounded transition-colors" 
@@ -219,7 +232,7 @@ const AdminRequestDetail = () => {
             <div className="bg-white shadow-sm rounded-xl p-6 border border-slate-200">
               <h2 className="text-lg font-bold text-slate-900 mb-6 flex items-center gap-2">
                 <Clock className="w-5 h-5 text-blue-600"/>
-                Status History Timeline
+                Status History
               </h2>
               <div className="relative border-l-2 border-slate-200 ml-3">
                 {(history ?? []).map((item: any) => (
@@ -247,19 +260,38 @@ const AdminRequestDetail = () => {
           </div>
 
           {/* Sidebar Column */}
-          <div className="lg:col-span-1 space-y-8">
-            <div className="bg-slate-800 shadow-lg rounded-xl p-6 border border-slate-700 text-white sticky top-8">
-              <h2 className="text-lg font-bold mb-4 flex items-center gap-2">
-                <AlertCircle className="w-5 h-5 text-blue-400"/>
-                Update Status
-              </h2>
-              <form onSubmit={handleStatusUpdate} className="space-y-4">
+          <div className="lg:col-span-1 space-y-6">
+            
+            {/* Provider Information Card */}
+            <div className="bg-white shadow-sm rounded-xl p-6 border border-slate-200">
+               <h2 className="text-lg font-bold text-slate-900 mb-4 pb-3 border-b border-slate-100">Provider Information</h2>
+               <div className="flex flex-col">
+                 <h3 className="text-2xl font-bold text-slate-900 mb-1">{request.user_name}</h3>
+                 <a href={`mailto:${request.user_email}`} className="text-blue-600 hover:text-blue-800 hover:underline mb-4 truncate text-sm font-medium">{request.user_email}</a>
+                 <div className="bg-blue-50/50 rounded p-3 border border-blue-100">
+                   <p className="text-xs text-slate-500 uppercase tracking-wider font-semibold mb-1">Member Since</p>
+                   <p className="text-sm text-slate-800 font-medium">{formatDate((request as any).user_created_at || request.created_at)}</p>
+                 </div>
+               </div>
+            </div>
+
+            {/* Update Status Card */}
+            <div className="bg-white shadow-lg rounded-xl p-6 border border-blue-100 sticky top-8">
+              <div className="mb-6 flex flex-col items-center justify-center p-4 bg-slate-50 rounded-lg border border-slate-200">
+                 <p className="text-xs font-semibold uppercase tracking-wider text-slate-500 mb-2">Current Status</p>
+                 <span className={`flex items-center px-4 py-2 space-x-2 rounded-full text-base font-bold border shadow-sm ${getStatusColor(request.status)}`}>
+                   <StatusIcon className="w-5 h-5 mr-1" />
+                   {formatStatus(request.status)}
+                 </span>
+              </div>
+              
+              <form onSubmit={handleStatusUpdate} className="space-y-5">
                 <div>
-                  <label className="block text-sm font-medium text-slate-300">Set New Status</label>
+                  <label className="block text-sm font-semibold text-slate-700 mb-1">Set New Status</label>
                   <select 
                     value={newStatus} 
                     onChange={e => setNewStatus(e.target.value)}
-                    className="mt-1 block w-full pl-3 pr-10 py-2 text-base border-slate-600 bg-slate-700 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm rounded-md"
+                    className="block w-full border border-slate-300 rounded-lg py-2.5 px-3 focus:ring-blue-500 focus:border-blue-500 font-medium text-slate-900 text-sm"
                   >
                     <option value="pending">Pending</option>
                     <option value="in_review">In Review</option>
@@ -268,28 +300,39 @@ const AdminRequestDetail = () => {
                   </select>
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-slate-300">Internal Note / Response to Applicant</label>
+                  <label className="block text-sm font-semibold text-slate-700 mb-1">Note (Required for changes)</label>
                   <textarea 
                     rows={4} 
+                    required
                     value={adminNote}
                     onChange={e => setAdminNote(e.target.value)}
-                    placeholder="Add a note explaining the status change..."
-                    className="mt-1 block w-full border border-slate-600 bg-slate-700 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm placeholder-slate-400"
+                    placeholder="Provide a reason or instructions..."
+                    className="block w-full border border-slate-300 rounded-lg py-2px-3 focus:ring-blue-500 focus:border-blue-500 sm:text-sm p-3 text-slate-800"
                   />
                 </div>
                 <button 
                   type="submit" 
-                  disabled={updating || newStatus === request.status}
-                  className="w-full flex justify-center items-center py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50 disabled:bg-slate-600"
+                  disabled={updating || newStatus === request.status || (!adminNote.trim() && newStatus !== request.status)}
+                  className="w-full flex justify-center items-center py-2.5 px-4 border border-transparent rounded-lg shadow-sm text-sm font-bold text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50 disabled:bg-slate-300 disabled:cursor-not-allowed transition-all"
                 >
                   <Save className="w-4 h-4 mr-2" />
-                  {updating ? 'Saving...' : 'Update Request'}
+                  {updating ? 'Saving...' : 'Update Status'}
                 </button>
               </form>
             </div>
           </div>
         </div>
       </div>
+      
+      <ConfirmDialog 
+        isOpen={showStatusDialog}
+        title="Update Status"
+        message={`Are you sure you want to change the status to ${formatStatus(newStatus)}?`}
+        confirmText="Update Status"
+        confirmColor="blue"
+        onConfirm={confirmStatusUpdate}
+        onCancel={() => setShowStatusDialog(false)}
+      />
     </div>
   );
 };
