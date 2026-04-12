@@ -33,6 +33,7 @@ const Navbar = () => {
               <>
                 <Link to="/admin/dashboard" className="text-sm font-medium text-blue-100 hover:text-white transition-colors">Dashboard</Link>
                 <Link to="/admin/requests" className="text-sm font-medium text-blue-100 hover:text-white transition-colors">Requests</Link>
+                <Link to="/admin/documents" className="text-sm font-medium text-blue-100 hover:text-white transition-colors">Documents</Link>
                 <span className="text-sm text-blue-200 font-medium ml-4 border-l pl-4 border-blue-500/50">Admin: {user?.name || 'Admin'}</span>
               </>
             ) : user ? (
@@ -74,6 +75,7 @@ const Navbar = () => {
               <>
                 <Link to="/admin/dashboard" className="block px-3 py-2 text-base font-medium text-white hover:bg-white/10 rounded-md">Dashboard</Link>
                 <Link to="/admin/requests" className="block px-3 py-2 text-base font-medium text-white hover:bg-white/10 rounded-md">Requests</Link>
+                <Link to="/admin/documents" className="block px-3 py-2 text-base font-medium text-white hover:bg-white/10 rounded-md">Documents</Link>
                 <div className="px-3 py-2 text-sm text-blue-200 font-medium border-t border-white/10 mt-2">Admin: {user?.name || 'Admin'}</div>
               </>
             ) : user ? (

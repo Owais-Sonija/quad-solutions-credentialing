@@ -10,6 +10,7 @@ import AdminLogin from './pages/admin/AdminLogin';
 import AdminDashboard from './pages/admin/AdminDashboard';
 import AdminRequests from './pages/admin/AdminRequests';
 import AdminRequestDetail from './pages/admin/AdminRequestDetail';
+import AdminDocuments from './pages/admin/AdminDocuments';
 import ContactSupport from './pages/ContactSupport';
 
 function App() {
@@ -34,6 +35,7 @@ function App() {
           <Route path="/admin/dashboard" element={<AdminDashboard />} />
           <Route path="/admin/requests" element={<AdminRequests />} />
           <Route path="/admin/requests/:id" element={<AdminRequestDetail />} />
+          <Route path="/admin/documents" element={<AdminDocuments />} />
         </Route>
       </Routes>
     </Router>

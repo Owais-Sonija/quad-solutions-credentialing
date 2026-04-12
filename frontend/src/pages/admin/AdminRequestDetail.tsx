@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useParams, Link } from 'react-router-dom';
-import { ArrowLeft, Clock, FileText, CheckCircle, AlertCircle, Save, Download } from 'lucide-react';
+import { ArrowLeft, Clock, FileText, CheckCircle, AlertCircle, Save, Download, Trash2, ExternalLink } from 'lucide-react';
 import api from '../../api/axios';
 import { useAuthStore } from '../../store/authStore';
 import type { CredentialingRequest, Document, StatusHistory } from '../../types/index';
@@ -186,9 +186,30 @@ const AdminRequestDetail = () => {
                           <p className="text-xs text-slate-500">{formatDocType(doc.doc_type || doc.document_type)} &bull; {formatDate(doc.uploaded_at)}</p>
                         </div>
                       </div>
-                      <a href={`${(import.meta.env.VITE_API_URL || 'http://localhost:5000/api').replace('/api', '')}/uploads/${doc.filename || doc.file_name}`} target="_blank" rel="noopener noreferrer" className="flex items-center text-blue-600 hover:text-blue-800 text-sm font-medium bg-blue-50 px-3 py-1.5 rounded">
-                        <Download className="w-4 h-4 mr-1" /> View / Download
-                      </a>
+                      <div className="flex items-center gap-2">
+                        <a href={`${(import.meta.env.VITE_API_URL || 'http://localhost:5000/api').replace('/api', '')}/uploads/${doc.filename || doc.file_name}`} target="_blank" rel="noopener noreferrer" className="flex items-center text-blue-600 hover:text-blue-800 text-sm font-medium bg-blue-50 px-3 py-1.5 rounded transition-colors" title="View">
+                          <ExternalLink className="w-4 h-4 sm:mr-1" /> <span className="hidden sm:inline">View</span>
+                        </a>
+                        <a href={`${(import.meta.env.VITE_API_URL || 'http://localhost:5000/api').replace('/api', '')}/uploads/${doc.filename || doc.file_name}`} download={doc.original_name || doc.file_name} className="flex items-center text-green-600 hover:text-green-800 text-sm font-medium bg-green-50 px-3 py-1.5 rounded transition-colors" title="Download">
+                          <Download className="w-4 h-4 sm:mr-1" /> <span className="hidden sm:inline">Download</span>
+                        </a>
+                        <button 
+                          onClick={async () => {
+                            if (!window.confirm("Are you sure you want to delete this document? \nThis action cannot be undone.")) return;
+                            try {
+                              await api.delete(`/admin/documents/${doc.id}`);
+                              alert("Document deleted successfully");
+                              fetchDetails();
+                            } catch (err: any) {
+                              alert(err.response?.data?.message || 'Failed to delete document');
+                            }
+                          }}
+                          className="flex items-center text-red-600 hover:text-red-800 text-sm font-medium bg-red-50 px-3 py-1.5 rounded transition-colors" 
+                          title="Delete"
+                        >
+                          <Trash2 className="w-4 h-4 sm:mr-1" /> <span className="hidden sm:inline">Delete</span>
+                        </button>
+                      </div>
                     </li>
                   ))}
                 </ul>

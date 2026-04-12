@@ -1,5 +1,7 @@
 import { Request, Response } from 'express';
 import pool from '../config/db';
+import fs from 'fs';
+import path from 'path';
 
 export const getAllRequests = async (req: Request, res: Response): Promise<void> => {
   try {
@@ -196,6 +198,78 @@ export const getDashboardStats = async (req: Request, res: Response): Promise<vo
     });
   } catch (error) {
     console.error('Error fetching dashboard stats:', error);
+    res.status(500).json({ message: 'Server error' });
+  }
+};
+
+export const getAllDocuments = async (req: Request, res: Response): Promise<void> => {
+  try {
+    const { doc_type, request_status } = req.query;
+
+    let query = `
+      SELECT d.*, cr.specialty, cr.request_type, cr.status as request_status,
+      u.name as user_name, u.email as user_email
+      FROM documents d
+      JOIN credentialing_requests cr ON d.request_id = cr.id
+      JOIN users u ON cr.user_id = u.id
+    `;
+
+    const queryParams = [];
+    const whereClause = [];
+    
+    if (doc_type) {
+      queryParams.push(doc_type);
+      whereClause.push(`d.doc_type = $${queryParams.length}`);
+    }
+
+    if (request_status) {
+       queryParams.push(request_status);
+       whereClause.push(`cr.status = $${queryParams.length}`);
+    }
+
+    if (whereClause.length > 0) {
+      query += ` WHERE ` + whereClause.join(' AND ');
+    }
+    
+    query += ` ORDER BY d.uploaded_at DESC`;
+
+    const { rows } = await pool.query(query, queryParams);
+    
+    res.status(200).json(rows);
+  } catch (error) {
+    console.error('Error fetching all documents:', error);
+    res.status(500).json({ message: 'Server error' });
+  }
+};
+
+export const deleteDocument = async (req: Request, res: Response): Promise<void> => {
+  try {
+    const { id } = req.params;
+
+    const getQuery = `SELECT * FROM documents WHERE id = $1`;
+    const getResult = await pool.query(getQuery, [id]);
+
+    if (getResult.rows.length === 0) {
+      res.status(404).json({ message: 'Document not found' });
+      return;
+    }
+
+    const doc = getResult.rows[0];
+
+    const deleteQuery = `DELETE FROM documents WHERE id = $1`;
+    await pool.query(deleteQuery, [id]);
+
+    if (doc.filename) {
+      // Assuming frontend uploads went to project root /uploads or backend root /uploads
+      const filepath = path.join(process.cwd(), 'uploads', doc.filename);
+      if (fs.existsSync(filepath)) {
+         fs.unlinkSync(filepath);
+      }
+    }
+
+    res.status(200).json({ message: 'Document deleted successfully' });
+  } catch (error) {
+    console.error('Error deleting document:', error);
     res.status(500).json({ message: 'Server error' });
   }
 };
