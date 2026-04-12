@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { ShieldAlert } from 'lucide-react';
+import { ShieldAlert, Building2 } from 'lucide-react';
 import api from '../../api/axios';
 import { useAuthStore } from '../../store/authStore';
 
@@ -29,15 +29,27 @@ const AdminLogin = () => {
   };
 
   return (
-    <div className="min-h-screen bg-slate-900 flex flex-col justify-center py-12 sm:px-6 lg:px-8">
-      <div className="sm:mx-auto sm:w-full sm:max-w-md">
-        <div className="flex justify-center">
-          <ShieldAlert className="w-12 h-12 text-blue-500" />
+    <div className="min-h-screen bg-slate-900 flex flex-col font-sans">
+      <nav className="bg-slate-900 border-b border-slate-800 text-white">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="flex h-16 items-center">
+            <div className="flex items-center gap-2">
+              <Building2 className="w-6 h-6 text-blue-500" />
+              <span className="text-lg font-bold">Quad Solutions</span>
+            </div>
+          </div>
         </div>
-        <h2 className="mt-6 text-center text-3xl font-extrabold text-white">Admin Secure Gateway</h2>
-      </div>
+      </nav>
 
-      <div className="mt-8 sm:mx-auto sm:w-full sm:max-w-md">
+      <main className="flex-1 flex flex-col justify-center py-12 sm:px-6 lg:px-8">
+        <div className="sm:mx-auto sm:w-full sm:max-w-md">
+          <div className="flex justify-center">
+            <ShieldAlert className="w-12 h-12 text-blue-500" />
+          </div>
+          <h2 className="mt-6 text-center text-3xl font-extrabold text-white">Admin Secure Gateway</h2>
+        </div>
+
+        <div className="mt-8 sm:mx-auto sm:w-full sm:max-w-md">
         <div className="bg-slate-800 py-8 px-4 shadow sm:rounded-lg sm:px-10 border border-slate-700">
           <form className="space-y-6" onSubmit={handleSubmit}>
             {error && (
@@ -66,8 +78,9 @@ const AdminLogin = () => {
               </button>
             </div>
           </form>
+          </div>
         </div>
-      </div>
+      </main>
     </div>
   );
 };

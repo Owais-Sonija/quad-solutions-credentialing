@@ -3,6 +3,8 @@ import { Link, useNavigate } from 'react-router-dom';
 import { ShieldCheck } from 'lucide-react';
 import api from '../api/axios';
 import { useAuthStore } from '../store/authStore';
+import PublicNavbar from '../components/layout/PublicNavbar';
+import PublicFooter from '../components/layout/PublicFooter';
 
 const Register = () => {
   const [formData, setFormData] = useState({
@@ -74,7 +76,9 @@ const Register = () => {
   };
 
   return (
-    <div className="min-h-screen bg-slate-50 flex flex-col justify-center py-12 sm:px-6 lg:px-8">
+    <div className="min-h-screen flex flex-col bg-slate-50 font-sans">
+      <PublicNavbar />
+      <main className="flex-1 flex flex-col justify-center py-24 sm:px-6 lg:px-8">
       <div className="sm:mx-auto sm:w-full sm:max-w-md">
         <div className="flex justify-center">
           <ShieldCheck className="w-12 h-12 text-blue-600" />
@@ -146,8 +150,10 @@ const Register = () => {
               </button>
             </div>
           </form>
+          </div>
         </div>
-      </div>
+      </main>
+      <PublicFooter />
     </div>
   );
 };

@@ -2,6 +2,8 @@ import { useState, useEffect } from 'react';
 import { Mail, Phone, Building2, CheckCircle } from 'lucide-react';
 import { useAuthStore } from '../store/authStore';
 import Navbar from '../components/layout/Navbar';
+import PublicNavbar from '../components/layout/PublicNavbar';
+import PublicFooter from '../components/layout/PublicFooter';
 
 const ContactSupport = () => {
   const { user } = useAuthStore();
@@ -70,10 +72,10 @@ const ContactSupport = () => {
   };
 
   return (
-    <div className="min-h-screen bg-slate-50 font-sans">
-      <Navbar />
+    <div className="min-h-screen flex flex-col bg-slate-50 font-sans">
+      {user ? <Navbar /> : <PublicNavbar />}
       
-      <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
+      <main className="flex-1 max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-24 w-full">
         {/* SECTION 1 - Contact Form */}
         <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-8 mb-12">
           <div className="text-center mb-8">
@@ -193,7 +195,9 @@ const ContactSupport = () => {
             <p className="text-sm font-medium text-slate-500 mt-auto bg-slate-50 py-1 px-3 rounded-full">New York, NY 10001</p>
           </div>
         </div>
-      </div>
+      </main>
+
+      {!user && <PublicFooter />}
     </div>
   );
 };
