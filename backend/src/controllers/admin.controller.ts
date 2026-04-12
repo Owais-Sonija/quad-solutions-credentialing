@@ -361,3 +361,86 @@ export const changeAdminPassword = async (req: Request, res: Response): Promise<
     res.status(500).json({ message: 'Server error changing password' });
   }
 };
+
+export const getAllUsers = async (req: Request, res: Response): Promise<void> => {
+  try {
+    const { search } = req.query;
+
+    let query = `
+      SELECT 
+        u.id,
+        u.name,
+        u.email,
+        u.phone,
+        u.created_at,
+        COUNT(cr.id)::int as total_requests,
+        COUNT(CASE WHEN cr.status = 'pending' THEN 1 END)::int as pending,
+        COUNT(CASE WHEN cr.status = 'in_review' THEN 1 END)::int as in_review,
+        COUNT(CASE WHEN cr.status = 'approved' THEN 1 END)::int as approved,
+        COUNT(CASE WHEN cr.status = 'rejected' THEN 1 END)::int as rejected
+      FROM users u
+      LEFT JOIN credentialing_requests cr ON cr.user_id = u.id
+    `;
+
+    const queryParams: any[] = [];
+    if (search) {
+      query += ` WHERE u.name ILIKE $1 OR u.email ILIKE $1`;
+      queryParams.push(`%${search}%`);
+    }
+
+    query += ` GROUP BY u.id ORDER BY u.created_at DESC`;
+
+    const { rows } = await pool.query(query, queryParams);
+    
+    res.status(200).json(rows);
+  } catch (error) {
+    console.error('Error fetching all users:', error);
+    res.status(500).json({ message: 'Server error retrieving users' });
+  }
+};
+
+export const getUserDetail = async (req: Request, res: Response): Promise<void> => {
+  try {
+    const { id } = req.params;
+
+    const userQuery = `SELECT id, name, email, phone, created_at FROM users WHERE id = $1`;
+    const userResult = await pool.query(userQuery, [id]);
+
+    if (userResult.rows.length === 0) {
+      res.status(404).json({ message: 'User not found' });
+      return;
+    }
+
+    const requestsQuery = `
+      SELECT cr.*, 
+             COUNT(d.id)::int as doc_count 
+      FROM credentialing_requests cr
+      LEFT JOIN documents d ON d.request_id = cr.id
+      WHERE cr.user_id = $1
+      GROUP BY cr.id
+      ORDER BY cr.submitted_at DESC
+    `;
+    const requestsResult = await pool.query(requestsQuery, [id]);
+
+    const statsQuery = `
+      SELECT 
+      COUNT(*)::int as total,
+      COUNT(CASE WHEN status = 'pending' THEN 1 END)::int as pending,
+      COUNT(CASE WHEN status = 'in_review' THEN 1 END)::int as in_review,
+      COUNT(CASE WHEN status = 'approved' THEN 1 END)::int as approved,
+      COUNT(CASE WHEN status = 'rejected' THEN 1 END)::int as rejected
+      FROM credentialing_requests
+      WHERE user_id = $1
+    `;
+    const statsResult = await pool.query(statsQuery, [id]);
+
+    res.status(200).json({
+      user: userResult.rows[0],
+      requests: requestsResult.rows,
+      stats: statsResult.rows[0]
+    });
+  } catch (error) {
+    console.error('Error fetching user details:', error);
+    res.status(500).json({ message: 'Server error retrieving user details' });
+  }
+};

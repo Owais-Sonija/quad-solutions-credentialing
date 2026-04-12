@@ -1,6 +1,6 @@
 import { Router } from 'express';
 import { verifyToken, requireAdmin } from '../middleware/auth.middleware';
-import { getAllRequests, getRequestDetail, updateStatus, getDashboardStats, getAllDocuments, deleteDocument, getAdminProfile, updateAdminProfile, changeAdminPassword } from '../controllers/admin.controller';
+import { getAllRequests, getRequestDetail, updateStatus, getDashboardStats, getAllDocuments, deleteDocument, getAdminProfile, updateAdminProfile, changeAdminPassword, getAllUsers, getUserDetail } from '../controllers/admin.controller';
 
 const router = Router();
 
@@ -9,6 +9,10 @@ router.use(verifyToken, requireAdmin);
 
 // Dashboard routes
 router.get('/stats', getDashboardStats);
+
+// User management routes
+router.get('/users', getAllUsers);
+router.get('/users/:id', getUserDetail);
 
 // Request management routes
 router.get('/requests', getAllRequests);
