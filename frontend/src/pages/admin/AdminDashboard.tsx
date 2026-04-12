@@ -1,0 +1,191 @@
+import { useState, useEffect } from 'react';
+import { Link, useNavigate } from 'react-router-dom';
+import { ShieldCheck, LogOut, Users, FileText, CheckCircle, Clock } from 'lucide-react';
+import api from '../../api/axios';
+import { useAuthStore } from '../../store/authStore';
+import Navbar from '../../components/layout/Navbar';
+import { STATUS_LABELS, STATUS_COLORS } from '../../data/constants';
+
+const formatDate = (dateString: string | null | undefined): string => {
+  if (!dateString) return 'N/A';
+  const date = new Date(dateString);
+  if (isNaN(date.getTime())) return 'N/A';
+  return date.toLocaleDateString('en-US', {
+    year: 'numeric',
+    month: 'short',
+    day: 'numeric'
+  });
+};
+
+const AdminDashboard = () => {
+  const { user, logout } = useAuthStore();
+  const navigate = useNavigate();
+  
+  const [stats, setStats] = useState({
+    total: 0,
+    pending: 0,
+    in_review: 0,
+    approved: 0,
+    rejected: 0,
+    recent_requests: []
+  });
+  const [requests, setRequests] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    const fetchDashboardData = async () => {
+      try {
+        setLoading(true);
+        // Sometimes stats endpoint does not exist yet natively on backends, so we fetch requests
+        // and manually map them just like before, but with all strict safeguards!
+        const response = await api.get('/admin/requests');
+        console.log('Admin Requests response:', response.data);
+        
+        let allRequests: any[] = [];
+        const data = response.data?.data || response.data?.requests || response.data;
+        if (Array.isArray(data)) {
+          allRequests = data;
+        }
+
+        setStats({
+          total: allRequests.length,
+          pending: allRequests.filter(r => r.status === 'pending').length,
+          in_review: allRequests.filter(r => r.status === 'in_review').length,
+          approved: allRequests.filter(r => r.status === 'approved').length,
+          rejected: allRequests.filter(r => r.status === 'rejected').length,
+          recent_requests: allRequests.slice(0, 5) as any
+        });
+        
+        setRequests(allRequests);
+      } catch (err) {
+        console.error('Failed to load dashboard data', err);
+        setError('Failed to load dashboard metrics');
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchDashboardData();
+  }, []);
+
+  const handleLogout = () => {
+    logout();
+    navigate('/login');
+  };
+
+  return (
+    <div className="min-h-screen bg-slate-100">
+      <Navbar />
+      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        <h1 className="text-2xl font-bold text-slate-900 mb-8">Dashboard Overview</h1>
+
+        {error && (
+          <div className="mb-6 p-4 bg-red-50 text-red-700 rounded-md border border-red-200">
+            {error}
+          </div>
+        )}
+
+        {loading ? (
+          <div className="flex justify-center items-center h-64">
+            <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-blue-600"></div>
+          </div>
+        ) : (
+          <>
+            <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
+              <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-6">
+                <div className="flex items-center">
+                  <div className="p-3 rounded-full bg-slate-100 mr-4"><FileText className="w-6 h-6 text-slate-600"/></div>
+                  <div>
+                    <p className="text-sm font-semibold text-slate-500 uppercase">Total Requests</p>
+                    <p className="text-2xl font-bold text-slate-900">{stats.total ?? 0}</p>
+                  </div>
+                </div>
+              </div>
+              <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-6">
+                <div className="flex items-center">
+                  <div className="p-3 rounded-full bg-yellow-100 mr-4"><Clock className="w-6 h-6 text-yellow-600"/></div>
+                  <div>
+                    <p className="text-sm font-semibold text-slate-500 uppercase">Pending</p>
+                    <p className="text-2xl font-bold text-slate-900">{stats.pending ?? 0}</p>
+                  </div>
+                </div>
+              </div>
+              <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-6">
+                <div className="flex items-center">
+                  <div className="p-3 rounded-full bg-blue-100 mr-4"><Users className="w-6 h-6 text-blue-600"/></div>
+                  <div>
+                    <p className="text-sm font-semibold text-slate-500 uppercase">In Review</p>
+                    <p className="text-2xl font-bold text-slate-900">{stats.in_review ?? 0}</p>
+                  </div>
+                </div>
+              </div>
+              <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-6">
+                <div className="flex items-center">
+                  <div className="p-3 rounded-full bg-green-100 mr-4"><CheckCircle className="w-6 h-6 text-green-600"/></div>
+                  <div>
+                    <p className="text-sm font-semibold text-slate-500 uppercase">Approved</p>
+                    <p className="text-2xl font-bold text-slate-900">{stats.approved ?? 0}</p>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div className="bg-white shadow-sm border border-slate-200 rounded-lg overflow-hidden">
+              <div className="px-6 py-5 border-b border-slate-200 flex justify-between items-center bg-slate-50">
+                <h3 className="text-lg font-medium text-slate-900">Recent Requests</h3>
+                <Link to="/admin/requests" className="text-sm font-medium text-blue-600 hover:text-blue-800">View all &rarr;</Link>
+              </div>
+              <div className="overflow-x-auto">
+                <table className="min-w-full divide-y divide-slate-200">
+                  <thead className="bg-white">
+                    <tr>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">User</th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">Specialty / Type</th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">Status</th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">Date</th>
+                      <th className="px-6 py-3 text-right text-xs font-medium text-slate-500 uppercase tracking-wider">Action</th>
+                    </tr>
+                  </thead>
+                  <tbody className="bg-white divide-y divide-slate-100">
+                    {(stats.recent_requests ?? []).map((req: any) => (
+                      <tr key={req.id} className="hover:bg-slate-50">
+                        <td className="px-6 py-4 whitespace-nowrap">
+                          <p className="text-sm font-medium text-slate-900">{req.user_name}</p>
+                          <p className="text-xs text-slate-500">{req.user_email}</p>
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap">
+                          <p className="text-sm text-slate-900">{req.specialty}</p>
+                          <p className="text-xs text-slate-500">{req.request_type}</p>
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap">
+                          <span className={`px-2.5 py-1 inline-flex text-xs leading-5 font-semibold rounded-full border ${STATUS_COLORS[req.status] || 'bg-gray-100 text-gray-800'}`}>
+                            {STATUS_LABELS[req.status] || req.status}
+                          </span>
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm text-slate-500">
+                          {formatDate((req as any).submitted_at || req.created_at)}
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                          <Link to={`/admin/requests/${req.id}`} className="text-blue-600 hover:text-blue-900 font-medium">
+                            Review
+                          </Link>
+                        </td>
+                      </tr>
+                    ))}
+                    {(stats.recent_requests?.length ?? 0) === 0 && (
+                      <tr>
+                        <td colSpan={5} className="px-6 py-4 text-center text-slate-500">No requests found.</td>
+                      </tr>
+                    )}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </>
+        )}
+      </main>
+    </div>
+  );
+};
+
+export default AdminDashboard;
