@@ -34,12 +34,14 @@ const Navbar = () => {
                 <Link to="/admin/dashboard" className="text-sm font-medium text-blue-100 hover:text-white transition-colors">Dashboard</Link>
                 <Link to="/admin/requests" className="text-sm font-medium text-blue-100 hover:text-white transition-colors">Requests</Link>
                 <Link to="/admin/documents" className="text-sm font-medium text-blue-100 hover:text-white transition-colors">Documents</Link>
+                <Link to="/admin/profile" className="text-sm font-medium text-blue-100 hover:text-white transition-colors">My Profile</Link>
                 <span className="text-sm text-blue-200 font-medium ml-4 border-l pl-4 border-blue-500/50">Admin: {user?.name || 'Admin'}</span>
               </>
             ) : user ? (
               <>
                 <Link to="/dashboard" className="text-sm font-medium text-blue-100 hover:text-white transition-colors">Dashboard</Link>
                 <Link to="/submit" className="text-sm font-medium text-blue-100 hover:text-white transition-colors">Submit Request</Link>
+                <Link to="/profile" className="text-sm font-medium text-blue-100 hover:text-white transition-colors">My Profile</Link>
                 <Link to="/contact" className="text-sm font-medium text-blue-100 hover:text-white transition-colors">Contact Support</Link>
                 <span className="text-sm text-blue-200 font-medium ml-4 border-l pl-4 border-blue-500/50">{user?.name}</span>
               </>
@@ -76,12 +78,14 @@ const Navbar = () => {
                 <Link to="/admin/dashboard" className="block px-3 py-2 text-base font-medium text-white hover:bg-white/10 rounded-md">Dashboard</Link>
                 <Link to="/admin/requests" className="block px-3 py-2 text-base font-medium text-white hover:bg-white/10 rounded-md">Requests</Link>
                 <Link to="/admin/documents" className="block px-3 py-2 text-base font-medium text-white hover:bg-white/10 rounded-md">Documents</Link>
+                <Link to="/admin/profile" className="block px-3 py-2 text-base font-medium text-white hover:bg-white/10 rounded-md">My Profile</Link>
                 <div className="px-3 py-2 text-sm text-blue-200 font-medium border-t border-white/10 mt-2">Admin: {user?.name || 'Admin'}</div>
               </>
             ) : user ? (
               <>
                 <Link to="/dashboard" className="block px-3 py-2 text-base font-medium text-white hover:bg-white/10 rounded-md">Dashboard</Link>
                 <Link to="/submit" className="block px-3 py-2 text-base font-medium text-white hover:bg-white/10 rounded-md">Submit Request</Link>
+                <Link to="/profile" className="block px-3 py-2 text-base font-medium text-white hover:bg-white/10 rounded-md">My Profile</Link>
                 <Link to="/contact" className="block px-3 py-2 text-base font-medium text-white hover:bg-white/10 rounded-md">Contact Support</Link>
                 <div className="px-3 py-2 text-sm text-blue-200 font-medium border-t border-white/10 mt-2">{user?.name}</div>
               </>

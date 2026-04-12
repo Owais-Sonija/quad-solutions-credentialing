@@ -6,11 +6,13 @@ import Login from './pages/Login';
 import Dashboard from './pages/Dashboard';
 import SubmitRequest from './pages/SubmitRequest';
 import RequestDetail from './pages/RequestDetail';
+import Profile from './pages/Profile';
 import AdminLogin from './pages/admin/AdminLogin';
 import AdminDashboard from './pages/admin/AdminDashboard';
 import AdminRequests from './pages/admin/AdminRequests';
 import AdminRequestDetail from './pages/admin/AdminRequestDetail';
 import AdminDocuments from './pages/admin/AdminDocuments';
+import AdminProfile from './pages/admin/AdminProfile';
 import ContactSupport from './pages/ContactSupport';
 import NotFound from './pages/NotFound';
 
@@ -28,6 +30,7 @@ function App() {
           <Route path="/dashboard" element={<Dashboard />} />
           <Route path="/submit" element={<SubmitRequest />} />
           <Route path="/request/:id" element={<RequestDetail />} />
+          <Route path="/profile" element={<Profile />} />
         </Route>
 
         {/* Admin Protected Routes */}
@@ -37,6 +40,7 @@ function App() {
           <Route path="/admin/requests" element={<AdminRequests />} />
           <Route path="/admin/requests/:id" element={<AdminRequestDetail />} />
           <Route path="/admin/documents" element={<AdminDocuments />} />
+          <Route path="/admin/profile" element={<AdminProfile />} />
         </Route>
 
         <Route path="*" element={<NotFound />} />

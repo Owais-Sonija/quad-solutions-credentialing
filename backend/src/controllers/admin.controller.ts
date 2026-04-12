@@ -1,4 +1,5 @@
 import { Request, Response } from 'express';
+import bcrypt from 'bcrypt';
 import pool from '../config/db';
 import fs from 'fs';
 import path from 'path';
@@ -271,5 +272,92 @@ export const deleteDocument = async (req: Request, res: Response): Promise<void>
   } catch (error) {
     console.error('Error deleting document:', error);
     res.status(500).json({ message: 'Server error' });
+  }
+};
+
+export const getAdminProfile = async (req: Request, res: Response): Promise<void> => {
+  try {
+    const adminId = (req as any).user?.id;
+    const adminResult = await pool.query('SELECT id, name, email, created_at FROM admins WHERE id = $1', [adminId]);
+    const admin = adminResult.rows[0];
+
+    if (!admin) {
+      res.status(404).json({ message: 'Admin not found' });
+      return;
+    }
+
+    // Get system stats for the card
+    const statsQuery = `
+      SELECT 
+        (SELECT COUNT(*) FROM users) as total_providers,
+        (SELECT COUNT(*) FROM credentialing_requests) as total_requests,
+        (SELECT COUNT(*) FROM credentialing_requests WHERE status = 'pending') as pending_review,
+        (SELECT COUNT(*) FROM documents) as documents_uploaded
+    `;
+    const statsResult = await pool.query(statsQuery);
+
+    res.status(200).json({
+      admin,
+      stats: {
+        total_providers: parseInt(statsResult.rows[0].total_providers) || 0,
+        total_requests: parseInt(statsResult.rows[0].total_requests) || 0,
+        pending_review: parseInt(statsResult.rows[0].pending_review) || 0,
+        documents_uploaded: parseInt(statsResult.rows[0].documents_uploaded) || 0
+      }
+    });
+  } catch (error) {
+    console.error('Error fetching admin profile:', error);
+    res.status(500).json({ message: 'Server error retrieving admin profile' });
+  }
+};
+
+export const updateAdminProfile = async (req: Request, res: Response): Promise<void> => {
+  try {
+    const adminId = (req as any).user?.id;
+    const { name } = req.body;
+    
+    if (!name || name.trim() === '') {
+      res.status(400).json({ message: 'Name is required' });
+      return;
+    }
+
+    const result = await pool.query(
+      'UPDATE admins SET name = $1 WHERE id = $2 RETURNING id, name, email, created_at',
+      [name, adminId]
+    );
+
+    res.status(200).json({ admin: result.rows[0] });
+  } catch (error) {
+    console.error('Error updating admin profile:', error);
+    res.status(500).json({ message: 'Server error updating profile' });
+  }
+};
+
+export const changeAdminPassword = async (req: Request, res: Response): Promise<void> => {
+  try {
+    const adminId = (req as any).user?.id;
+    const { currentPassword, newPassword } = req.body;
+
+    const adminResult = await pool.query('SELECT password_hash FROM admins WHERE id = $1', [adminId]);
+    const admin = adminResult.rows[0];
+
+    if (!admin) {
+      res.status(404).json({ message: 'Admin not found' });
+      return;
+    }
+
+    const isValidPassword = await bcrypt.compare(currentPassword, admin.password_hash);
+    if (!isValidPassword) {
+      res.status(401).json({ message: 'Invalid current password' });
+      return;
+    }
+
+    const passwordHash = await bcrypt.hash(newPassword, 10);
+    await pool.query('UPDATE admins SET password_hash = $1 WHERE id = $2', [passwordHash, adminId]);
+
+    res.status(200).json({ message: 'Password changed successfully' });
+  } catch (error) {
+    console.error('Error changing admin password:', error);
+    res.status(500).json({ message: 'Server error changing password' });
   }
 };

@@ -9,11 +9,15 @@ const ProtectedRoute = ({ role }: ProtectedRouteProps) => {
   const { isAuthenticated, user } = useAuthStore();
 
   if (!isAuthenticated()) {
-    return <Navigate to={role === 'admin' ? '/admin/login' : '/login'} replace />;
+    return <Navigate to="/login" replace />;
   }
 
-  if (role && user?.role !== role) {
-    return <Navigate to={user?.role === 'admin' ? '/admin/dashboard' : '/dashboard'} replace />;
+  if (role === 'user' && user?.role !== 'user') {
+    return <Navigate to="/admin/dashboard" replace />;
+  }
+
+  if (role === 'admin' && user?.role !== 'admin') {
+    return <Navigate to="/login" replace />;
   }
 
   return <Outlet />;
