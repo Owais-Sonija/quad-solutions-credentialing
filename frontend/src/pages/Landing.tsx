@@ -12,6 +12,9 @@ const Landing = () => {
               <span className="text-xl font-bold text-slate-800">MedCred Solutions</span>
             </div>
             <div className="flex gap-4">
+              <Link to="/contact" className="text-slate-600 hover:text-blue-600 px-3 py-2 font-medium transition-colors">
+                Contact Support
+              </Link>
               <Link to="/login" className="text-slate-600 hover:text-blue-600 px-3 py-2 font-medium transition-colors">
                 Login
               </Link>

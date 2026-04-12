@@ -10,6 +10,7 @@ import AdminLogin from './pages/admin/AdminLogin';
 import AdminDashboard from './pages/admin/AdminDashboard';
 import AdminRequests from './pages/admin/AdminRequests';
 import AdminRequestDetail from './pages/admin/AdminRequestDetail';
+import ContactSupport from './pages/ContactSupport';
 
 function App() {
   return (
@@ -18,6 +19,7 @@ function App() {
         <Route path="/" element={<Landing />} />
         <Route path="/register" element={<Register />} />
         <Route path="/login" element={<Login />} />
+        <Route path="/contact" element={<ContactSupport />} />
         
         {/* User Protected Routes */}
         <Route element={<ProtectedRoute role="user" />}>
