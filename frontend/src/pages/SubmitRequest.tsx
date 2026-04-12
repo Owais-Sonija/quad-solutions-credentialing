@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { ChevronRight, ArrowLeft, UploadCloud, CheckCircle, Loader2, AlertCircle, XCircle } from 'lucide-react';
+import { ChevronRight, ArrowLeft, UploadCloud, CheckCircle, Loader2, XCircle } from 'lucide-react';
 import api from '../api/axios';
 import Navbar from '../components/layout/Navbar';
 import { US_STATES, REQUEST_TYPES, MEDICAL_SPECIALTIES, DOCUMENT_TYPES } from '../data/constants';
@@ -23,6 +23,8 @@ const SubmitRequest = () => {
     request_type: REQUEST_TYPES[0],
     notes: ''
   });
+
+  const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
 
   // Step 2 state
   const [files, setFiles] = useState<{file: File, type: string, uploaded: boolean, error?: string | null}[]>([]);
