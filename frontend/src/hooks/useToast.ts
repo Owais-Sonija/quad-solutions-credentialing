@@ -1,19 +1,22 @@
 import { useState, useCallback } from 'react';
+import type { ToastItem } from '../types/index';
 
 export const useToast = () => {
-  const [toast, setToast] = useState<{
-    message: string;
-    type: 'success' | 'error' | 'info' | 'warning';
-  } | null>(null);
+  const [toasts, setToasts] = useState<ToastItem[]>([]);
 
   const showToast = useCallback((
-    message: string, 
+    message: string,
     type: 'success' | 'error' | 'info' | 'warning' = 'info'
   ) => {
-    setToast({ message, type });
+    const id = Date.now().toString();
+    setToasts(prev => [...prev, { id, message, type }]);
   }, []);
 
-  const hideToast = useCallback(() => setToast(null), []);
+  const hideToast = useCallback((id: string) => {
+    setToasts(prev => prev.filter(t => t.id !== id));
+  }, []);
 
-  return { toast, showToast, hideToast };
+  const hideAll = useCallback(() => setToasts([]), []);
+
+  return { toasts, showToast, hideToast, hideAll };
 };

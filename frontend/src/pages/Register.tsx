@@ -29,9 +29,26 @@ const Register = () => {
     }
   };
 
+  const handleBlur = (e: React.FocusEvent<HTMLInputElement>) => {
+    if (e.target.name === 'name') {
+      const nameRegex = /^[a-zA-Z\s\-'\.]+$/;
+      if (formData.name.trim() && !nameRegex.test(formData.name.trim())) {
+        setErrors({ ...errors, name: 'Please enter your name in English letters only' });
+      }
+    }
+  };
+
   const validate = () => {
     const newErrors: Record<string, string> = {};
-    if (!formData.name.trim()) newErrors.name = 'Name is required';
+    if (!formData.name.trim()) {
+      newErrors.name = 'Name is required';
+    } else {
+      const nameRegex = /^[a-zA-Z\s\-'\.]+$/;
+      if (!nameRegex.test(formData.name.trim())) {
+        newErrors.name = 'Please enter your name in English letters only';
+      }
+    }
+    
     if (!formData.email.trim()) newErrors.email = 'Email is required';
     else if (!/^\S+@\S+\.\S+$/.test(formData.email)) newErrors.email = 'Invalid email address';
     if (!formData.password) newErrors.password = 'Password is required';
@@ -104,7 +121,7 @@ const Register = () => {
             <div>
               <label htmlFor="name" className="block text-sm font-medium text-slate-700">Full Name</label>
               <div className="mt-1">
-                <input id="name" name="name" type="text" value={formData.name} onChange={handleChange} className={`appearance-none block w-full px-3 py-2 border ${errors.name ? 'border-red-300' : 'border-slate-300'} rounded-md shadow-sm placeholder-slate-400 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm`} />
+                <input id="name" name="name" type="text" value={formData.name} onChange={handleChange} onBlur={handleBlur} className={`appearance-none block w-full px-3 py-2 border ${errors.name ? 'border-red-300' : 'border-slate-300'} rounded-md shadow-sm placeholder-slate-400 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm`} />
               </div>
               {errors.name && <p className="mt-1 text-xs text-red-600">{errors.name}</p>}
             </div>

@@ -6,7 +6,7 @@ import { useAuthStore } from '../../store/authStore';
 import type { CredentialingRequest, Document, StatusHistory } from '../../types/index';
 import Navbar from '../../components/layout/Navbar';
 import { STATUS_LABELS, STATUS_COLORS } from '../../data/constants';
-import { Toast } from '../../components/ui/Toast';
+import { ToastContainer } from '../../components/ui/Toast';
 import { useToast } from '../../hooks/useToast';
 import { LoadingSpinner } from '../../components/ui/LoadingSpinner';
 import { ConfirmDialog } from '../../components/ui/ConfirmDialog';
@@ -60,7 +60,7 @@ const AdminRequestDetail = () => {
   const [documents, setDocuments] = useState<Document[]>([]);
   const [history, setHistory] = useState<StatusHistory[]>([]);
   const [loading, setLoading] = useState(true);
-  const { toast, showToast, hideToast } = useToast();
+  const { toasts, showToast, hideToast } = useToast();
   
   // Status Update state
   const [newStatus, setNewStatus] = useState('');
@@ -123,7 +123,7 @@ const AdminRequestDetail = () => {
   );
   if (!request) return (
     <div className="min-h-screen bg-slate-100 flex items-center justify-center">
-      {toast && <Toast message={toast.message} type={toast.type} onClose={hideToast} />}
+      <ToastContainer toasts={toasts} onClose={hideToast} />
       <span className="text-slate-500">Request not found</span>
     </div>
   );
@@ -133,7 +133,7 @@ const AdminRequestDetail = () => {
   return (
     <div className="min-h-screen bg-slate-100 pb-8">
       <Navbar />
-      {toast && <Toast message={toast.message} type={toast.type} onClose={hideToast} />}
+      <ToastContainer toasts={toasts} onClose={hideToast} />
       
       <div className="max-w-7xl mx-auto mt-8 px-4 sm:px-6 lg:px-8">
         <Link to="/admin/requests" className="inline-flex items-center text-slate-600 hover:text-slate-900 mb-6 transition-colors font-medium">

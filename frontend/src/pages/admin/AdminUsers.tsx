@@ -3,7 +3,7 @@ import { Link } from 'react-router-dom';
 import Navbar from '../../components/layout/Navbar';
 import api from '../../api/axios';
 import { useToast } from '../../hooks/useToast';
-import { Toast } from '../../components/ui/Toast';
+import { ToastContainer } from '../../components/ui/Toast';
 import { LoadingSpinner } from '../../components/ui/LoadingSpinner';
 import { STATUS_LABELS, STATUS_COLORS } from '../../data/constants';
 import { Search, User as UserIcon, X, Activity, FileText, CheckCircle, Clock, AlertCircle } from 'lucide-react';
@@ -21,7 +21,7 @@ const AdminUsers = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [filterType, setFilterType] = useState('All Users');
   
-  const { toast, showToast, hideToast } = useToast();
+  const { toasts, showToast, hideToast } = useToast();
 
   // Modal State
   const [selectedUser, setSelectedUser] = useState<any>(null);
@@ -108,7 +108,7 @@ const AdminUsers = () => {
   return (
     <div className="min-h-screen bg-slate-50 font-sans">
       <Navbar />
-      {toast && <Toast message={toast.message} type={toast.type} onClose={hideToast} />}
+      <ToastContainer toasts={toasts} onClose={hideToast} />
 
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {/* Header */}

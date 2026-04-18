@@ -47,10 +47,7 @@ const Landing = () => {
               Fast, secure, and compliant credentialing solutions for healthcare providers. Get credentialed in days, not months.
             </p>
             <div className="flex flex-col sm:flex-row justify-center items-center gap-4 mb-16">
-              <Link to="/register" className="w-full sm:w-auto px-8 py-3.5 text-base font-semibold text-white bg-blue-600 rounded-xl shadow-lg shadow-blue-200 hover:bg-blue-700 hover:-translate-y-0.5 transition-all">
-                Start Your Application
-              </Link>
-              <a href="#services" onClick={(e) => scrollToSection(e, 'services')} className="w-full sm:w-auto px-8 py-3.5 text-base font-semibold text-slate-700 bg-white border-2 border-slate-200 rounded-xl hover:border-slate-300 hover:bg-slate-50 transition-all">
+              <a href="#services" onClick={(e) => scrollToSection(e, 'services')} className="w-full sm:w-auto px-8 py-3.5 text-base font-semibold text-white bg-blue-600 rounded-xl shadow-lg shadow-blue-200 hover:bg-blue-700 hover:-translate-y-0.5 transition-all">
                 Learn More
               </a>
             </div>
@@ -212,8 +209,8 @@ const Landing = () => {
           <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 text-center text-white">
             <h2 className="text-3xl md:text-4xl font-bold mb-6">Ready to Get Credentialed?</h2>
             <p className="text-xl text-blue-100 mb-10">Join 500+ healthcare providers who trust Quad Solutions for their credentialing needs.</p>
-            <Link to="/register" className="inline-block px-8 py-4 text-lg font-bold text-blue-600 bg-white rounded-xl hover:bg-slate-50 hover:scale-105 shadow-xl transition-all">
-              Start Your Application Today
+            <Link to="/login" className="inline-block px-8 py-4 text-lg font-bold text-blue-600 bg-white rounded-xl hover:bg-slate-50 hover:scale-105 shadow-xl transition-all">
+              Login to Your Account
             </Link>
           </div>
         </section>

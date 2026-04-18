@@ -3,7 +3,7 @@ import { Link } from 'react-router-dom';
 import Navbar from '../../components/layout/Navbar';
 import { useAuthStore } from '../../store/authStore';
 import api from '../../api/axios';
-import { Toast } from '../../components/ui/Toast';
+import { ToastContainer } from '../../components/ui/Toast';
 import { useToast } from '../../hooks/useToast';
 import { LoadingSpinner } from '../../components/ui/LoadingSpinner';
 import { Shield, User as UserIcon, Activity, Key, FileText, CheckCircle, Clock } from 'lucide-react';
@@ -22,7 +22,7 @@ const getInitials = (name: string) => {
 
 const AdminProfile = () => {
   const { user, token, login } = useAuthStore();
-  const { toast, showToast, hideToast } = useToast();
+  const { toasts, showToast, hideToast } = useToast();
   const [loading, setLoading] = useState(true);
   
   const [profileData, setProfileData] = useState<any>(null);
@@ -131,7 +131,7 @@ const AdminProfile = () => {
     return (
       <div className="min-h-screen bg-slate-50 font-sans">
         <Navbar />
-        {toast && <Toast message={toast.message} type={toast.type} onClose={hideToast} />}
+        <ToastContainer toasts={toasts} onClose={hideToast} />
         <div className="max-w-4xl mx-auto px-4 py-8 text-center text-slate-500">Failed to load profile.</div>
       </div>
     );
@@ -140,7 +140,7 @@ const AdminProfile = () => {
   return (
     <div className="min-h-screen bg-slate-50 font-sans pb-12">
       <Navbar />
-      {toast && <Toast message={toast.message} type={toast.type} onClose={hideToast} />}
+      <ToastContainer toasts={toasts} onClose={hideToast} />
       
       <main className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <h1 className="text-2xl font-bold text-slate-900 mb-8">Admin Profile</h1>
@@ -292,6 +292,17 @@ const AdminProfile = () => {
                 <h3 className="text-lg font-bold text-slate-900">Change Password</h3>
               </div>
               <div className="p-6">
+                {profileData.email === 'demoadmin@quadsolutions.com' ? (
+                  <div className="bg-amber-50 border border-amber-200 rounded-lg p-4">
+                    <p className="text-sm font-semibold text-amber-800">
+                      🔒 Demo Account Restriction
+                    </p>
+                    <p className="text-sm text-amber-700 mt-1">
+                      Password cannot be changed for demo accounts.
+                      Contact support@quadsolutions.com for admin access.
+                    </p>
+                  </div>
+                ) : (
                 <form onSubmit={handlePasswordSubmit} className="space-y-6 max-w-lg">
                   <div>
                     <label className="block text-sm font-bold text-slate-700 mb-1">Current Password <span className="text-red-500">*</span></label>
@@ -337,6 +348,7 @@ const AdminProfile = () => {
                     </button>
                   </div>
                 </form>
+                )}
               </div>
             </div>
 

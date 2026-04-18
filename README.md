@@ -1,217 +1,320 @@
 # Quad Solutions — Medical Credentialing Management System
 
+## Live Demo
+- Frontend: [To be added after deployment]
+- Backend API: [To be added after deployment]
+
+### Demo Credentials
+| Account | Email | Password |
+|---|---|---|
+| Demo User | demo@quadsolutions.com | Demo@1234 |
+| Demo Admin | demoadmin@quadsolutions.com | DemoAdmin@1234 |
+| Real Admin | admin@quadsolutions.com | Admin@1234 |
+
+> Demo accounts have limited functionality. 
+> Passwords cannot be changed on demo accounts.
+> Demo user data auto-resets after 20 requests.
+
 ## Project Overview
-Quad Solutions is a comprehensive, full-stack web application designed for managing medical credentialing operations intuitively and securely. The platform efficiently bridges the gap between healthcare providers submitting credentialing requests and administrators managing complex verification workflows. This system guarantees streamlined communication, centralized document management, and dynamic status tracking, built explicitly as part of a DevelopersHub internship task.
+Quad Solutions Medical Credentialing Management System is a 
+full-stack web application built for managing medical 
+credentialing operations and client onboarding. Built as part 
+of the DevelopersHub Corporation Full-Stack Development 
+Internship Task (3 Weeks).
 
 ## Tech Stack
+
 ### Frontend
 - React 18 + TypeScript
 - Vite
-- Tailwind CSS
+- Tailwind CSS v3
 - Zustand (state management)
 - Axios (HTTP client)
 - React Router v6
+- Recharts (analytics charts)
 
 ### Backend
 - Node.js + Express + TypeScript
 - PostgreSQL (database)
 - JWT (authentication)
-- Multer (file uploads)
+- Multer (file uploads, max 1MB)
 - bcrypt (password hashing)
 - express-validator (input validation)
+- express-rate-limit (rate limiting)
 
-### Deployment
+### Infrastructure
 - Frontend: Vercel
 - Backend: Render
 - Database: Railway (PostgreSQL)
 
 ## Features
+
 ### User Side
 - Client registration and secure login
 - Multi-step credentialing request submission
-- Document upload (PDF, JPG, PNG)
-- Real-time application status tracking
-- Status history timeline
+- Document upload (PDF, JPG, PNG — max 1MB, 2 files per request)
+- Real-time application status tracking with polling (15s)
+- Status history timeline with admin notes
 - User profile management
 - Contact support page
+- Live updates indicator with pause/resume
 
 ### Admin Panel
-- Secure admin authentication
-- Dashboard with analytics (total, pending, approved, rejected)
-- View and manage all client applications
-- Update application status with notes
+- Secure admin authentication (separate from users)
+- Dashboard with analytics and real-time stats (60s polling)
+- Advanced analytics with charts (Recharts)
+  - Requests by specialty (bar chart)
+  - Status distribution (pie chart)
+  - Requests over time (area chart)
+  - Document type breakdown
+- View and manage all client applications (30s polling)
+- Update application status with notes and audit trail
 - Document management (view, download, delete)
-- User management with detailed profiles
+- User management with detailed profiles and request history
 - Admin profile management
 
+### Security
+- JWT authentication with 7-day expiry
+- Role-based access control (Admin/User)
+- bcrypt password hashing (10 rounds)
+- Input validation and sanitization
+- NSFW/profanity content filtering
+- File type and extension validation
+- Double extension attack prevention
+- Rate limiting (global: 200/15min, auth: 15/15min)
+- Request body size limit (1MB)
+- Request timeout (30s)
+- Demo accounts cannot change passwords
+- English-only name validation
+
 ## Project Structure
-```text
 quad-solutions/
 ├── backend/
 │   ├── src/
-│   │   ├── config/         # Database configuration
-│   │   ├── controllers/    # Route handlers
-│   │   ├── middleware/     # Auth, upload middleware
-│   │   ├── routes/         # API routes
-│   │   ├── types/          # TypeScript interfaces
-│   │   └── server.ts       # Entry point
-│   ├── uploads/            # Uploaded files
-│   ├── schema.sql          # Database schema
+│   │   ├── config/
+│   │   │   └── db.ts              # PostgreSQL pool config
+│   │   ├── controllers/
+│   │   │   ├── auth.controller.ts
+│   │   │   ├── request.controller.ts
+│   │   │   ├── document.controller.ts
+│   │   │   └── admin.controller.ts
+│   │   ├── middleware/
+│   │   │   ├── auth.middleware.ts
+│   │   │   ├── upload.middleware.ts
+│   │   │   ├── validate.middleware.ts
+│   │   │   └── contentFilter.middleware.ts
+│   │   ├── routes/
+│   │   │   ├── auth.routes.ts
+│   │   │   ├── user.routes.ts
+│   │   │   └── admin.routes.ts
+│   │   ├── types/
+│   │   │   └── index.ts
+│   │   └── server.ts
+│   ├── uploads/              # Uploaded files (gitignored)
+│   ├── schema.sql            # Database schema
+│   ├── .env.example
 │   └── package.json
 ├── frontend/
 │   ├── src/
-│   │   ├── api/            # Axios configuration
-│   │   ├── components/     # Reusable components
-│   │   ├── data/           # Constants and static data
-│   │   ├── hooks/          # Custom React hooks
-│   │   ├── pages/          # Page components
-│   │   ├── store/          # Zustand auth store
-│   │   ├── types/          # TypeScript interfaces
-│   │   └── App.tsx         # Routes configuration
+│   │   ├── api/
+│   │   │   └── axios.ts          # Axios instance
+│   │   ├── components/
+│   │   │   ├── layout/
+│   │   │   │   ├── Navbar.tsx
+│   │   │   │   ├── PublicNavbar.tsx
+│   │   │   │   ├── PublicFooter.tsx
+│   │   │   │   └── ProtectedRoute.tsx
+│   │   │   └── ui/
+│   │   │       ├── Toast.tsx
+│   │   │       ├── LoadingSpinner.tsx
+│   │   │       ├── ConfirmDialog.tsx
+│   │   │       └── LiveIndicator.tsx
+│   │   ├── data/
+│   │   │   └── constants.ts      # US states, specialties etc
+│   │   ├── hooks/
+│   │   │   ├── useToast.ts
+│   │   │   └── usePolling.ts
+│   │   ├── pages/
+│   │   │   ├── Landing.tsx
+│   │   │   ├── Login.tsx
+│   │   │   ├── Register.tsx
+│   │   │   ├── Dashboard.tsx
+│   │   │   ├── SubmitRequest.tsx
+│   │   │   ├── RequestDetail.tsx
+│   │   │   ├── Profile.tsx
+│   │   │   ├── ContactSupport.tsx
+│   │   │   ├── NotFound.tsx
+│   │   │   └── admin/
+│   │   │       ├── AdminLogin.tsx
+│   │   │       ├── AdminDashboard.tsx
+│   │   │       ├── AdminAnalytics.tsx
+│   │   │       ├── AdminRequests.tsx
+│   │   │       ├── AdminRequestDetail.tsx
+│   │   │       ├── AdminDocuments.tsx
+│   │   │       ├── AdminUsers.tsx
+│   │   │       └── AdminProfile.tsx
+│   │   ├── store/
+│   │   │   └── authStore.ts
+│   │   ├── types/
+│   │   │   └── index.ts
+│   │   └── App.tsx
+│   ├── .env.example
 │   └── package.json
 └── README.md
-```
 
 ## Prerequisites
 - Node.js v18 or higher
 - PostgreSQL 16
-- npm or yarn
+- npm
 
-## Local Setup Instructions
+## Local Setup
 
 ### 1. Clone the repository
-```bash
 git clone https://github.com/Owais-Sonija/quad-solutions-credentialing.git
 cd quad-solutions-credentialing
-```
 
 ### 2. Backend Setup
-```bash
 cd backend
 npm install
 cp .env.example .env
-```
 
-Fill in your `.env` file:
-```env
+### 3. Configure backend .env
 DATABASE_URL=postgresql://user:password@host:port/dbname
 JWT_SECRET=your-secret-key-minimum-32-characters
 PORT=3000
 NODE_ENV=development
 FRONTEND_URL=http://localhost:5173
-```
 
-### 3. Database Setup
-Run `schema.sql` against your PostgreSQL database:
-```bash
+### 4. Setup Database
+Run schema.sql against your PostgreSQL database:
 psql "your-database-url" -f schema.sql
-```
 
-Or paste contents into your Railway/Supabase query editor.
+Default credentials after setup:
+- Admin: admin@quadsolutions.com / Admin@1234
+- Demo User: auto-created on first server start
+- Demo Admin: auto-created on first server start
 
-**Default admin credentials:**
-- Email: admin@quadsolutions.com
-- Password: Admin@1234
-
-### 4. Start Backend
-```bash
+### 5. Start Backend
 npm run dev
-```
-Backend runs on: `http://localhost:3000`
+Backend: http://localhost:3000
 
-### 5. Frontend Setup
-```bash
+### 6. Frontend Setup
 cd ../frontend
 npm install
 cp .env.example .env
-```
 
-Fill in your `.env`:
-```env
+### 7. Configure frontend .env
 VITE_API_URL=http://localhost:3000/api
-```
 
-### 6. Start Frontend
-```bash
+### 8. Start Frontend
 npm run dev
-```
-Frontend runs on: `http://localhost:5173`
+Frontend: http://localhost:5173
 
 ## API Documentation
 
+### Base URL
+Development: http://localhost:3000/api
+Production: https://your-render-url.onrender.com/api
+
 ### Authentication
-- `POST /api/auth/register`
-  - Body: `{ name, email, password, phone? }`
-  - Returns: `{ token, user }`
-- `POST /api/auth/login`
-  - Body: `{ email, password }`
-  - Returns: `{ token, user }`
-- `POST /api/auth/admin/login`
-  - Body: `{ email, password }`
-  - Returns: `{ token, admin }`
+POST /api/auth/register
+  Body: { name, email, password, phone? }
+  Returns: { token, user }
 
-### User Endpoints (require Bearer token, role: user)
-- `GET    /api/user/requests` - Returns: Array of user's credentialing requests with doc count
-- `POST   /api/user/requests` - Body: `{ specialty, npi_number, license_state, request_type, notes? }` - Returns: Created request
-- `GET    /api/user/requests/:id` - Returns: Request + documents + status history
-- `POST   /api/user/requests/:id/documents` - Body: `FormData { file, doc_type }` - Returns: Created document record
-- `GET    /api/user/requests/:id/documents` - Returns: Array of documents
-- `GET    /api/user/profile` - Returns: User info + request stats
-- `PATCH  /api/user/profile` - Body: `{ name, phone? }` - Returns: Updated user
-- `PATCH  /api/user/profile/change-password` - Body: `{ currentPassword, newPassword }` - Returns: `{ message }`
+POST /api/auth/login
+  Body: { email, password }
+  Returns: { token, user }
 
-### Admin Endpoints (require Bearer token, role: admin)
-- `GET    /api/admin/stats` - Returns: `{ total, pending, in_review, approved, rejected, recent_requests }`
-- `GET    /api/admin/requests` - Query params: `status?, page?, limit?` - Returns: Paginated requests with user info
-- `GET    /api/admin/requests/:id` - Returns: Full request + user + documents + status history
-- `PATCH  /api/admin/requests/:id/status` - Body: `{ status, note? }` - Returns: Updated request
-- `GET    /api/admin/documents` - Query params: `doc_type?, request_status?` - Returns: All documents with user and request info
-- `DELETE /api/admin/documents/:id` - Returns: `{ message }`
-- `GET    /api/admin/users` - Query params: `search?` - Returns: All users with request counts
-- `GET    /api/admin/users/:id` - Returns: User + requests + stats
-- `GET    /api/admin/profile` - Returns: Admin info + system stats
-- `PATCH  /api/admin/profile` - Body: `{ name }` - Returns: Updated admin
-- `PATCH  /api/admin/profile/change-password` - Body: `{ currentPassword, newPassword }` - Returns: `{ message }`
+POST /api/auth/admin/login
+  Body: { email, password }
+  Returns: { token, admin }
+
+### User Endpoints (Bearer token required)
+GET    /api/user/requests
+GET    /api/user/requests/:id
+POST   /api/user/requests
+POST   /api/user/requests/:id/documents
+GET    /api/user/requests/:id/documents
+GET    /api/user/profile
+PATCH  /api/user/profile
+PATCH  /api/user/profile/change-password
+
+### Admin Endpoints (Admin Bearer token required)
+GET    /api/admin/stats
+GET    /api/admin/analytics
+GET    /api/admin/requests
+GET    /api/admin/requests/:id
+PATCH  /api/admin/requests/:id/status
+GET    /api/admin/documents
+DELETE /api/admin/documents/:id
+GET    /api/admin/users
+GET    /api/admin/users/:id
+GET    /api/admin/profile
+PATCH  /api/admin/profile
+PATCH  /api/admin/profile/change-password
+
+### Health Check
+GET /api/health
+Returns: { status: 'ok', timestamp }
 
 ## Environment Variables
 
-### Backend (.env)
-| Variable | Description | Example |
+### Backend
+| Variable | Description | Required |
 |---|---|---|
-| DATABASE_URL | PostgreSQL connection string | postgresql://... |
-| JWT_SECRET | Secret for JWT signing | min 32 chars |
-| PORT | Server port | 3000 |
-| NODE_ENV | Environment | development |
-| FRONTEND_URL | Frontend URL for CORS | http://localhost:5173 |
+| DATABASE_URL | PostgreSQL connection string | Yes |
+| JWT_SECRET | JWT signing secret (min 32 chars) | Yes |
+| PORT | Server port | No (default 3000) |
+| NODE_ENV | development or production | Yes |
+| FRONTEND_URL | Frontend URL for CORS | Yes |
 
-### Frontend (.env)
-| Variable | Description | Example |
+### Frontend
+| Variable | Description | Required |
 |---|---|---|
-| VITE_API_URL | Backend API URL | http://localhost:3000/api |
+| VITE_API_URL | Backend API base URL | Yes |
 
-## Default Credentials
-**Admin Login:**
-- Email: admin@quadsolutions.com
-- Password: Admin@1234
+## Rate Limits
+| Route | Limit |
+|---|---|
+| All routes | 200 requests per 15 minutes |
+| Auth routes | 15 requests per 15 minutes |
+| File uploads | 20 uploads per hour |
+
+## File Upload Restrictions
+- Allowed types: PDF, JPG, PNG only
+- Maximum file size: 1MB per file
+- Maximum files per request: 2
+- Double extensions blocked
+- Malicious filenames sanitized
 
 ## Database Schema
 5 tables:
-- `users`: Registered healthcare providers
-- `admins`: System administrators  
-- `credentialing_requests`: Submitted credentialing applications
-- `documents`: Uploaded files linked to requests
-- `status_history`: Audit trail of all status changes
+- users: Healthcare provider accounts
+- admins: System administrator accounts
+- credentialing_requests: Submitted applications
+- documents: Uploaded files linked to requests
+- status_history: Full audit trail of status changes
 
-## Evaluation Criteria Met
-- System Architecture and Design ✓
-- Functionality and Feature Implementation ✓
-- API Design and Integration ✓
-- UI/UX and Responsiveness ✓
-- Code Quality and Structure ✓
-- Deployment and Completeness ✓
+## Evaluation Criteria Coverage
+| Criteria | Implementation |
+|---|---|
+| System Architecture | RESTful API, MVC pattern, separated concerns |
+| Functionality | All required features + advanced enhancements |
+| API Design | Documented REST endpoints, proper HTTP codes |
+| UI/UX | Responsive Tailwind design, loading states, toasts |
+| Code Quality | TypeScript strict mode, constants file, reusable components |
+| Deployment | Vercel + Render + Railway |
+
+## Advanced Enhancements Implemented
+- Role-based dashboards (User + Admin with different views)
+- Real-time updates via polling (15s/30s/60s intervals)
+- Advanced analytics dashboard with Recharts
+- Live indicator with pause/resume functionality
+- Demo accounts with auto-cleanup
 
 ## Developer
-- **Built by:** Dr Owais Sonija
-- **Internship:** DevelopersHub Corporation
-- **Duration:** 3 Weeks
-- **Deadline:** April 28, 2026
+Name: Dr Owais Sonija
+Internship: DevelopersHub Corporation
+Project: Quad Solutions Medical Credentialing System
+Duration: 3 Weeks
+Deadline: April 28, 2026

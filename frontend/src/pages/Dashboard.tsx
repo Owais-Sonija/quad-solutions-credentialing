@@ -1,11 +1,13 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
+import { usePolling } from '../hooks/usePolling';
+import { LiveIndicator } from '../components/ui/LiveIndicator';
 import { Link, useNavigate } from 'react-router-dom';
 import { FileText, Plus, LogOut } from 'lucide-react';
 import api from '../api/axios';
 import { useAuthStore } from '../store/authStore';
 import type { CredentialingRequest } from '../types/index';
 import { LoadingSpinner } from '../components/ui/LoadingSpinner';
-import { Toast } from '../components/ui/Toast';
+import { ToastContainer } from '../components/ui/Toast';
 import { useToast } from '../hooks/useToast';
 import Navbar from '../components/layout/Navbar';
 import { STATUS_LABELS, STATUS_COLORS } from '../data/constants';
@@ -26,30 +28,34 @@ const Dashboard = () => {
   const navigate = useNavigate();
   const [requests, setRequests] = useState<CredentialingRequest[]>([]);
   const [loading, setLoading] = useState(true);
-  const { toast, showToast, hideToast } = useToast();
+  const { toasts, showToast, hideToast } = useToast();
 
-  useEffect(() => {
-    const fetchRequests = async () => {
-      try {
-        setLoading(true);
-        const response = await api.get('/user/requests');
-        
-        // Extract array depending on response shape safely
-        const actualData = response.data?.requests || response.data?.data || response.data;
-        if (Array.isArray(actualData)) {
-          setRequests(actualData);
-        } else {
-          setRequests([]);
-        }
-      } catch (err: any) {
-        console.error('Failed to fetch requests', err);
-        showToast(err.response?.data?.message || 'Failed to load requests', 'error');
-      } finally {
-        setLoading(false);
+  const [lastUpdated, setLastUpdated] = useState<Date | null>(null);
+  const [isPolling, setIsPolling] = useState(true);
+
+  const fetchRequests = useCallback(async () => {
+    try {
+      const response = await api.get('/user/requests');
+      const data = response.data;
+      if (Array.isArray(data)) {
+        setRequests(data);
+      } else {
+        setRequests(data?.requests ?? data?.data ?? []);
       }
-    };
-    fetchRequests();
-  }, []);
+      setLastUpdated(new Date());
+    } catch (err: any) {
+      console.error('Failed to fetch requests', err);
+      showToast(err.response?.data?.message || 'Failed to load requests', 'error');
+    } finally {
+      setLoading(false);
+    }
+  }, [showToast]);
+
+  usePolling(fetchRequests, {
+    interval: 30000,
+    enabled: isPolling,
+    immediate: true
+  });
 
   const handleLogout = () => {
     logout();
@@ -61,15 +67,30 @@ const Dashboard = () => {
   return (
     <div className="min-h-screen bg-slate-50">
       <Navbar />
-      {toast && <Toast message={toast.message} type={toast.type} onClose={hideToast} />}
+      <ToastContainer toasts={toasts} onClose={hideToast} />
 
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <div className="flex justify-between items-center mb-8">
-          <h1 className="text-2xl font-bold text-slate-900">Your Requests</h1>
-          <Link to="/submit" className="flex items-center gap-2 bg-blue-600 text-white px-4 py-2 rounded-lg font-medium hover:bg-blue-700 transition-colors shadow-sm">
-            <Plus className="w-5 h-5" />
-            Submit New Request
-          </Link>
+        <div className="flex flex-col md:flex-row md:items-center justify-between mb-8 space-y-4 md:space-y-0">
+          <div>
+            <h1 className="text-2xl font-bold text-slate-900">Your Requests</h1>
+            <LiveIndicator 
+              isPolling={isPolling}
+              lastUpdated={lastUpdated}
+              interval={30}
+            />
+          </div>
+          <div className="flex flex-wrap items-center gap-3">
+            <button
+              onClick={() => setIsPolling(!isPolling)}
+              className={`text-xs px-3 py-1.5 rounded-full border transition-colors ${isPolling ? 'border-green-300 text-green-700 bg-green-50 hover:bg-green-100' : 'border-slate-300 text-slate-600 bg-white hover:bg-slate-50'}`}
+            >
+              {isPolling ? '⏸ Pause Updates' : '▶ Resume Updates'}
+            </button>
+            <Link to="/submit" className="flex items-center gap-2 bg-blue-600 text-white px-4 py-2 rounded-lg font-medium hover:bg-blue-700 transition-colors shadow-sm">
+              <Plus className="w-5 h-5" />
+              Submit New Request
+            </Link>
+          </div>
         </div>
 
         {loading ? (

@@ -338,11 +338,19 @@ export const changeAdminPassword = async (req: Request, res: Response): Promise<
     const adminId = (req as any).user?.id;
     const { currentPassword, newPassword } = req.body;
 
-    const adminResult = await pool.query('SELECT password_hash FROM admins WHERE id = $1', [adminId]);
+    const adminResult = await pool.query('SELECT email, password_hash FROM admins WHERE id = $1', [adminId]);
     const admin = adminResult.rows[0];
 
     if (!admin) {
       res.status(404).json({ message: 'Admin not found' });
+      return;
+    }
+
+    const DEMO_ADMIN_EMAILS = ['demoadmin@quadsolutions.com'];
+    if (DEMO_ADMIN_EMAILS.includes(admin.email)) {
+      res.status(403).json({ 
+        message: 'Password cannot be changed for demo accounts.' 
+      });
       return;
     }
 
@@ -442,5 +450,78 @@ export const getUserDetail = async (req: Request, res: Response): Promise<void> 
   } catch (error) {
     console.error('Error fetching user details:', error);
     res.status(500).json({ message: 'Server error retrieving user details' });
+  }
+};
+
+export const getAnalytics = async (req: Request, res: Response): Promise<void> => {
+  try {
+    const overviewQuery = `
+      SELECT 
+        COUNT(*)::int as total_requests,
+        COUNT(CASE WHEN status = 'pending' THEN 1 END)::int as pending,
+        COUNT(CASE WHEN status = 'in_review' THEN 1 END)::int as in_review,
+        COUNT(CASE WHEN status = 'approved' THEN 1 END)::int as approved,
+        COUNT(CASE WHEN status = 'rejected' THEN 1 END)::int as rejected
+      FROM credentialing_requests
+    `;
+    const specialtyQuery = `
+      SELECT specialty, COUNT(*)::int as count
+      FROM credentialing_requests
+      GROUP BY specialty
+      ORDER BY count DESC
+      LIMIT 8
+    `;
+    const typeQuery = `
+      SELECT request_type, COUNT(*)::int as count
+      FROM credentialing_requests
+      GROUP BY request_type
+      ORDER BY count DESC
+    `;
+    const timeQuery = `
+      SELECT 
+        DATE(submitted_at) as date,
+        COUNT(*)::int as count
+      FROM credentialing_requests
+      WHERE submitted_at >= NOW() - INTERVAL '30 days'
+      GROUP BY DATE(submitted_at)
+      ORDER BY date ASC
+    `;
+    const docQuery = `
+      SELECT 
+        COUNT(*)::int as total_documents,
+        COUNT(CASE WHEN doc_type = 'license' THEN 1 END)::int as license,
+        COUNT(CASE WHEN doc_type = 'certificate' THEN 1 END)::int as certificate,
+        COUNT(CASE WHEN doc_type = 'insurance' THEN 1 END)::int as insurance,
+        COUNT(CASE WHEN doc_type = 'identity' THEN 1 END)::int as identity,
+        COUNT(CASE WHEN doc_type = 'other' THEN 1 END)::int as other
+      FROM documents
+    `;
+    const userQuery = `SELECT COUNT(*)::int as total_users FROM users`;
+
+    const [overviewRes, specialtyRes, typeRes, timeRes, docRes, userRes] = await Promise.all([
+      pool.query(overviewQuery),
+      pool.query(specialtyQuery),
+      pool.query(typeQuery),
+      pool.query(timeQuery),
+      pool.query(docQuery),
+      pool.query(userQuery)
+    ]);
+
+    const overview = overviewRes.rows[0];
+    overview.total_users = userRes.rows[0].total_users;
+    overview.approval_rate = overview.total_requests > 0 
+      ? Math.round((overview.approved / overview.total_requests) * 1000) / 10 
+      : 0;
+
+    res.status(200).json({
+      overview,
+      by_specialty: specialtyRes.rows,
+      by_type: typeRes.rows,
+      over_time: timeRes.rows,
+      documents: docRes.rows[0]
+    });
+  } catch (error) {
+    console.error('Error fetching analytics:', error);
+    res.status(500).json({ message: 'Server error retrieving analytics' });
   }
 };

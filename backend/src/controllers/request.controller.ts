@@ -1,5 +1,6 @@
 import { Request, Response } from 'express';
 import pool from '../config/db';
+import { containsBlockedContent, sanitizeText } from '../middleware/contentFilter.middleware';
 
 export const submitRequest = async (req: Request, res: Response): Promise<void> => {
   try {
@@ -17,14 +18,53 @@ export const submitRequest = async (req: Request, res: Response): Promise<void> 
       return;
     }
 
+    if (notes && containsBlockedContent(notes)) {
+      return res.status(400).json({ 
+        message: 'Your submission contains inappropriate content. Please revise.' 
+      });
+    }
+    
+    const sanitizedNotes = notes ? sanitizeText(notes) : undefined;
+
     const query = `
       INSERT INTO credentialing_requests (user_id, specialty, npi_number, license_state, request_type, notes)
       VALUES ($1, $2, $3, $4, $5, $6)
       RETURNING *
     `;
-    const values = [userId, specialty, npi_number, license_state, request_type, notes];
+    const values = [userId, specialty, npi_number, license_state, request_type, sanitizedNotes];
     
     const { rows } = await pool.query(query, values);
+    
+    // After insert check if demo user and auto clean up
+    const DEMO_EMAIL = 'demo@quadsolutions.com';
+    const MAX_DEMO_REQUESTS = 20;
+    const CLEANUP_COUNT = 5;
+
+    const userCheck = await pool.query(
+      'SELECT email FROM users WHERE id = $1',
+      [req.user!.id]
+    );
+
+    if (userCheck.rows[0]?.email === DEMO_EMAIL) {
+      const countResult = await pool.query(
+        `SELECT COUNT(*)::int as count 
+         FROM credentialing_requests WHERE user_id = $1`,
+        [req.user!.id]
+      );
+      if (countResult.rows[0].count >= MAX_DEMO_REQUESTS) {
+        await pool.query(`
+          DELETE FROM credentialing_requests 
+          WHERE id IN (
+            SELECT id FROM credentialing_requests 
+            WHERE user_id = $1
+            ORDER BY submitted_at ASC
+            LIMIT $2
+          )
+        `, [req.user!.id, CLEANUP_COUNT]);
+        console.log('Demo cleanup: removed 5 oldest requests');
+      }
+    }
+
     res.status(201).json(rows[0]);
   } catch (error) {
     console.error('Error submitting request:', error);

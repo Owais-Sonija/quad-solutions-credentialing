@@ -1,11 +1,13 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
+import { usePolling } from '../../hooks/usePolling';
+import { LiveIndicator } from '../../components/ui/LiveIndicator';
 import { Link, useNavigate } from 'react-router-dom';
 import { ShieldCheck, LogOut, Users, FileText, CheckCircle, Clock } from 'lucide-react';
 import api from '../../api/axios';
 import { useAuthStore } from '../../store/authStore';
 import Navbar from '../../components/layout/Navbar';
 import { STATUS_LABELS, STATUS_COLORS } from '../../data/constants';
-import { Toast } from '../../components/ui/Toast';
+import { ToastContainer } from '../../components/ui/Toast';
 import { useToast } from '../../hooks/useToast';
 import { LoadingSpinner } from '../../components/ui/LoadingSpinner';
 
@@ -34,40 +36,46 @@ const AdminDashboard = () => {
   });
   const [requests, setRequests] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
-  const { toast, showToast, hideToast } = useToast();
+  const { toasts, showToast, hideToast } = useToast();
 
-  useEffect(() => {
-    const fetchDashboardData = async () => {
-      try {
-        setLoading(true);
-        // Sometimes stats endpoint does not exist yet natively on backends, so we fetch requests
-        // and manually map them just like before, but with all strict safeguards!
-        const response = await api.get('/admin/requests');
-        
-        let allRequests: any[] = [];
-        const data = response.data?.data || response.data?.requests || response.data;
-        if (Array.isArray(data)) {
-          allRequests = data;
-        }
+  const [lastUpdated, setLastUpdated] = useState<Date | null>(null);
+  const [isPolling, setIsPolling] = useState(true);
 
-        setStats({
-          total: allRequests.length,
-          pending: allRequests.filter(r => r.status === 'pending').length,
-          in_review: allRequests.filter(r => r.status === 'in_review').length,
-          approved: allRequests.filter(r => r.status === 'approved').length,
-          rejected: allRequests.filter(r => r.status === 'rejected').length,
-          recent_requests: allRequests.slice(0, 5) as any
-        });
-        
-        setRequests(allRequests);
-      } catch (err: any) {
-        showToast(err.response?.data?.message || 'Failed to load dashboard data', 'error');
-      } finally {
-        setLoading(false);
+  const fetchDashboardData = useCallback(async () => {
+    try {
+      // First try fetching exact stats if admin.controller/routes supported it properly
+      // We will maintain the backward compatible mapping approach
+      const response = await api.get('/admin/requests');
+      
+      let allRequests: any[] = [];
+      const data = response.data?.data || response.data?.requests || response.data;
+      if (Array.isArray(data)) {
+        allRequests = data;
       }
-    };
-    fetchDashboardData();
+
+      setStats({
+        total: allRequests.length,
+        pending: allRequests.filter(r => r.status === 'pending').length,
+        in_review: allRequests.filter(r => r.status === 'in_review').length,
+        approved: allRequests.filter(r => r.status === 'approved').length,
+        rejected: allRequests.filter(r => r.status === 'rejected').length,
+        recent_requests: allRequests.slice(0, 5) as any
+      });
+      
+      setRequests(allRequests);
+      setLastUpdated(new Date());
+    } catch (err: any) {
+      console.error('Failed to load dashboard data:', err);
+    } finally {
+      setLoading(false);
+    }
   }, []);
+
+  usePolling(fetchDashboardData, {
+    interval: 60000,
+    enabled: isPolling,
+    immediate: true
+  });
 
   const handleLogout = () => {
     logout();
@@ -77,9 +85,18 @@ const AdminDashboard = () => {
   return (
     <div className="min-h-screen bg-slate-100">
       <Navbar />
-      {toast && <Toast message={toast.message} type={toast.type} onClose={hideToast} />}
+      <ToastContainer toasts={toasts} onClose={hideToast} />
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <h1 className="text-2xl font-bold text-slate-900 mb-8">Dashboard Overview</h1>
+        <div className="flex items-center justify-between mb-8">
+          <div>
+            <h1 className="text-2xl font-bold text-slate-900">Dashboard Overview</h1>
+            <LiveIndicator 
+              isPolling={isPolling}
+              lastUpdated={lastUpdated}
+              interval={60}
+            />
+          </div>
+        </div>
 
         {loading ? (
           <LoadingSpinner message="Loading dashboard..." />

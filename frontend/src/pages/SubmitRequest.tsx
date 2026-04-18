@@ -4,7 +4,7 @@ import { ChevronRight, ArrowLeft, UploadCloud, CheckCircle, Loader2, XCircle } f
 import api from '../api/axios';
 import Navbar from '../components/layout/Navbar';
 import { US_STATES, REQUEST_TYPES, MEDICAL_SPECIALTIES, DOCUMENT_TYPES } from '../data/constants';
-import { Toast } from '../components/ui/Toast';
+import { ToastContainer } from '../components/ui/Toast';
 import { useToast } from '../hooks/useToast';
 import { LoadingSpinner } from '../components/ui/LoadingSpinner';
 
@@ -13,7 +13,7 @@ const SubmitRequest = () => {
   const [step, setStep] = useState(1);
   const [loading, setLoading] = useState(false);
   const [requestId, setRequestId] = useState<string | null>(null);
-  const { toast, showToast, hideToast } = useToast();
+  const { toasts, showToast, hideToast } = useToast();
 
   // Step 1 state
   const [formData, setFormData] = useState({
@@ -101,21 +101,51 @@ const SubmitRequest = () => {
     if (e.target.files) {
       const newFilesList = Array.from(e.target.files);
       const validFiles: {file: File, type: string, uploaded: boolean, error?: string | null}[] = [];
+
+      if (files.length + newFilesList.length > 2) {
+        showToast('Maximum 2 files allowed per request', 'warning');
+        return;
+      }
       
+      const allowedTypes = ['application/pdf', 'image/jpeg', 'image/png'];
+      const allowedExtensions = ['.pdf', '.jpg', '.jpeg', '.png'];
+
       newFilesList.forEach(f => {
-        const allowedTypes = ['application/pdf', 'image/jpeg', 'image/png'];
         if (!allowedTypes.includes(f.type)) {
-          showToast("Only PDF, JPG, and PNG files are allowed", "error");
+          showToast(`${f.name}: Only PDF, JPG and PNG allowed`, 'error');
           return;
         }
-        if (f.size > 5 * 1024 * 1024) {
-          showToast("File too large. Maximum size is 5MB", "error");
+        
+        const ext = '.' + f.name.split('.').pop()?.toLowerCase();
+        if (!allowedExtensions.includes(ext)) {
+          showToast(`${f.name}: Invalid file type`, 'error');
           return;
         }
-        validFiles.push({ file: f, type: 'license', uploaded: false, error: null });
+        
+        const nameWithoutExt = f.name.substring(0, f.name.lastIndexOf('.'));
+        if (nameWithoutExt.includes('.')) {
+          showToast(`${f.name}: Invalid filename - double extensions not allowed`, 'error');
+          return;
+        }
+        
+        if (f.size > 1 * 1024 * 1024) {
+          showToast(`${f.name}: File too large. Maximum size is 1MB`, 'error');
+          return;
+        }
+        
+        validFiles.push({ 
+          file: f, type: 'license', uploaded: false, error: null 
+        });
       });
 
       setFiles([...files, ...validFiles]);
+
+      if (files.length + validFiles.length >= 2) {
+        showToast(
+          'Maximum 2 files allowed. Remove a file to add another.', 
+          'warning'
+        );
+      }
     }
   };
 
@@ -192,7 +222,7 @@ const SubmitRequest = () => {
     <div className="min-h-screen bg-slate-50 pb-8">
       <Navbar />
       
-      {toast && <Toast message={toast.message} type={toast.type} onClose={hideToast} />}
+      <ToastContainer toasts={toasts} onClose={hideToast} />
 
       <div className="max-w-3xl mx-auto">
         <button onClick={() => navigate('/dashboard')} className="flex items-center text-slate-500 hover:text-slate-800 mb-6 transition-colors">
@@ -338,7 +368,7 @@ const SubmitRequest = () => {
                 <input type="file" multiple onChange={handleFileChange} className="absolute inset-0 w-full h-full opacity-0 cursor-pointer" />
                 <UploadCloud className="mx-auto h-12 w-12 text-blue-400 mb-3" />
                 <p className="text-sm font-medium text-slate-900">Click or drag files to upload</p>
-                <p className="text-xs text-slate-500 mt-1">Accepted formats: PDF, JPG, PNG only &bull; Maximum size: 5MB per file</p>
+                <p className="text-xs text-slate-500 mt-1">Accepted formats: PDF, JPG, PNG only &bull; Max 1MB per file &bull; Max 2 files per request</p>
               </div>
 
               {files.length > 0 && (

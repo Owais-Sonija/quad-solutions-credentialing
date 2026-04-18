@@ -1,4 +1,6 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
+import { usePolling } from '../hooks/usePolling';
+import { LiveIndicator } from '../components/ui/LiveIndicator';
 import { useParams, Link } from 'react-router-dom';
 import { ArrowLeft, Clock, FileText, CheckCircle, AlertCircle } from 'lucide-react';
 import api from '../api/axios';
@@ -6,7 +8,7 @@ import type { CredentialingRequest, Document, StatusHistory } from '../types/ind
 import Navbar from '../components/layout/Navbar';
 import { STATUS_LABELS, STATUS_COLORS } from '../data/constants';
 import { LoadingSpinner } from '../components/ui/LoadingSpinner';
-import { Toast } from '../components/ui/Toast';
+import { ToastContainer } from '../components/ui/Toast';
 import { useToast } from '../hooks/useToast';
 
 
@@ -51,25 +53,41 @@ const RequestDetail = () => {
   const [documents, setDocuments] = useState<Document[]>([]);
   const [history, setHistory] = useState<StatusHistory[]>([]);
   const [loading, setLoading] = useState(true);
-  const { toast, showToast, hideToast } = useToast();
+  const { toasts, showToast, hideToast } = useToast();
 
-  useEffect(() => {
-    const fetchData = async () => {
-      try {
-        const response = await api.get(`/user/requests/${id}`);
-        const data = response.data?.data || response.data;
-        
-        setRequest(data?.request || data);
-        setDocuments(data?.documents || []);
-        setHistory(data?.status_history || []);
-      } catch (err: any) {
-        showToast(err.response?.data?.message || 'Failed to fetch details', 'error');
-      } finally {
-        setLoading(false);
+  const [lastUpdated, setLastUpdated] = useState<Date | null>(null);
+  const [isPolling, setIsPolling] = useState(true);
+  const [previousStatus, setPreviousStatus] = useState<string | null>(null);
+
+  const fetchRequest = useCallback(async () => {
+    try {
+      const response = await api.get(`/user/requests/${id}`);
+      const data = response.data?.data || response.data;
+      
+      const newStatus = data?.request?.status || data?.status;
+      if (previousStatus && newStatus && previousStatus !== newStatus) {
+        showToast(
+          'Status updated to: ' + (STATUS_LABELS[newStatus] ?? newStatus),
+          'success'
+        );
       }
-    };
-    fetchData();
-  }, [id]);
+      setPreviousStatus(newStatus);
+      setRequest(data?.request || data);
+      setDocuments(data?.documents || []);
+      setHistory(data?.status_history || []);
+      setLastUpdated(new Date());
+    } catch (err: any) {
+      showToast(err.response?.data?.message || 'Failed to fetch details', 'error');
+    } finally {
+      setLoading(false);
+    }
+  }, [id, previousStatus, showToast]);
+
+  usePolling(fetchRequest, {
+    interval: 15000,
+    enabled: isPolling,
+    immediate: true
+  });
 
   if (loading) return (
     <div className="min-h-screen bg-slate-50 flex items-center justify-center">
@@ -78,8 +96,8 @@ const RequestDetail = () => {
   );
   if (!request) return (
     <div className="min-h-screen bg-slate-50 flex flex-col items-center justify-center">
-      {toast && <Toast message={toast.message} type={toast.type} onClose={hideToast} />}
-      {!toast && <div>Request not found</div>}
+      <ToastContainer toasts={toasts} onClose={hideToast} />
+      {toasts.length === 0 && <div>Request not found</div>}
     </div>
   );
 
@@ -88,12 +106,47 @@ const RequestDetail = () => {
   return (
     <div className="min-h-screen bg-slate-50 pb-8">
       <Navbar />
-      {toast && <Toast message={toast.message} type={toast.type} onClose={hideToast} />}
+      <ToastContainer toasts={toasts} onClose={hideToast} />
       <div className="max-w-4xl mx-auto mt-8 px-4 sm:px-6 lg:px-8">
         <Link to="/dashboard" className="inline-flex items-center text-slate-500 hover:text-slate-800 mb-6 transition-colors">
           <ArrowLeft className="w-4 h-4 mr-1" /> Back to Dashboard
         </Link>
-        
+        <div className="flex items-center justify-between mb-2">
+          <h1 className="text-2xl font-bold text-slate-900">
+            Request Details
+          </h1>
+          <button
+            onClick={() => setIsPolling(!isPolling)}
+            className={`text-xs px-3 py-1.5 rounded-full border transition-colors ${isPolling ? 'border-green-300 text-green-700 bg-green-50' : 'border-gray-300 text-gray-600 bg-white'}`}
+          >
+            {isPolling ? '⏸ Pause' : '▶ Live'}
+          </button>
+        </div>
+        <div className="mb-6">
+          <LiveIndicator 
+            isPolling={isPolling}
+            lastUpdated={lastUpdated}
+            interval={15}
+          />
+        </div>
+
+        {previousStatus && request?.status !== previousStatus && (
+          <div className="bg-green-50 border border-green-200 rounded-lg p-4 mb-4 flex items-center gap-3">
+            <span className="text-green-600 text-xl">🎉</span>
+            <div>
+              <p className="font-medium text-green-800">
+                Status Updated!
+              </p>
+              <p className="text-sm text-green-600">
+                Your application status has been updated to{' '}
+                <strong>
+                  {STATUS_LABELS[request?.status] ?? request?.status}
+                </strong>
+              </p>
+            </div>
+          </div>
+        )}
+
         <div className="bg-white shadow rounded-xl p-6 border border-slate-200 mb-8">
           <div className="flex justify-between items-start mb-6">
             <div>

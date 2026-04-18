@@ -42,3 +42,9 @@ export interface StatusHistory {
   changed_by_name?: string;
   changed_at: string;
 }
+
+export interface ToastItem {
+  id: string;
+  message: string;
+  type: 'success' | 'error' | 'info' | 'warning';
+}

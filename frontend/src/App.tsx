@@ -9,6 +9,7 @@ import RequestDetail from './pages/RequestDetail';
 import Profile from './pages/Profile';
 import AdminLogin from './pages/admin/AdminLogin';
 import AdminDashboard from './pages/admin/AdminDashboard';
+import AdminAnalytics from './pages/admin/AdminAnalytics';
 import AdminUsers from './pages/admin/AdminUsers';
 import AdminRequests from './pages/admin/AdminRequests';
 import AdminRequestDetail from './pages/admin/AdminRequestDetail';
@@ -38,6 +39,7 @@ function App() {
         <Route path="/admin/login" element={<AdminLogin />} />
         <Route element={<ProtectedRoute role="admin" />}>
           <Route path="/admin/dashboard" element={<AdminDashboard />} />
+          <Route path="/admin/analytics" element={<AdminAnalytics />} />
           <Route path="/admin/users" element={<AdminUsers />} />
           <Route path="/admin/requests" element={<AdminRequests />} />
           <Route path="/admin/requests/:id" element={<AdminRequestDetail />} />

@@ -1,4 +1,6 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
+import { usePolling } from '../../hooks/usePolling';
+import { LiveIndicator } from '../../components/ui/LiveIndicator';
 import { Link, useNavigate } from 'react-router-dom';
 import { Search, ArrowLeft } from 'lucide-react';
 import api from '../../api/axios';
@@ -6,7 +8,7 @@ import { useAuthStore } from '../../store/authStore';
 import Navbar from '../../components/layout/Navbar';
 import type { CredentialingRequest } from '../../types/index';
 import { STATUS_LABELS, STATUS_COLORS } from '../../data/constants';
-import { Toast } from '../../components/ui/Toast';
+import { ToastContainer } from '../../components/ui/Toast';
 import { useToast } from '../../hooks/useToast';
 import { LoadingSpinner } from '../../components/ui/LoadingSpinner';
 
@@ -27,34 +29,45 @@ const AdminRequests = () => {
   const [requests, setRequests] = useState<CredentialingRequest[]>([]);
   const [filteredReqs, setFilteredReqs] = useState<CredentialingRequest[]>([]);
   const [loading, setLoading] = useState(true);
-  const { toast, showToast, hideToast } = useToast();
+  const { toasts, showToast, hideToast } = useToast();
   const [activeTab, setActiveTab] = useState('All');
   const [searchTerm, setSearchTerm] = useState('');
 
   const tabs = ['All', 'Pending', 'In Review', 'Approved', 'Rejected'];
 
-  useEffect(() => {
-    const fetchRequests = async () => {
-      try {
-        setLoading(true);
-        const response = await api.get('/admin/requests');
-        
-        let actualData: any[] = [];
-        const baseData = response.data?.data || response.data?.requests || response.data;
-        if (Array.isArray(baseData)) {
-          actualData = baseData;
-        }
-        
-        setRequests(actualData);
-        setFilteredReqs(actualData);
-      } catch (err: any) {
-        showToast(err.response?.data?.message || 'Failed to fetch requests', 'error');
-      } finally {
-        setLoading(false);
+  const [lastUpdated, setLastUpdated] = useState<Date | null>(null);
+  const [isPolling, setIsPolling] = useState(true);
+  const prevCountRef = useRef(0);
+
+  const fetchRequests = useCallback(async () => {
+    try {
+      const response = await api.get('/admin/requests');
+      
+      let actualData: any[] = [];
+      const baseData = response.data?.data || response.data?.requests || response.data;
+      if (Array.isArray(baseData)) {
+        actualData = baseData;
       }
-    };
-    fetchRequests();
-  }, []);
+      
+      if (prevCountRef.current > 0 && actualData.length > prevCountRef.current) {
+        showToast('New request received!', 'info');
+      }
+      prevCountRef.current = actualData.length;
+      
+      setRequests(actualData);
+      setLastUpdated(new Date());
+    } catch (err: any) {
+      console.error('Failed to fetch requests', err);
+    } finally {
+      if (loading) setLoading(false);
+    }
+  }, [loading, showToast]);
+
+  usePolling(fetchRequests, {
+    interval: 30000,
+    enabled: isPolling,
+    immediate: true
+  });
 
   useEffect(() => {
     let result = requests ?? [];
@@ -85,13 +98,20 @@ const AdminRequests = () => {
   return (
     <div className="min-h-screen bg-slate-100">
       <Navbar />
-      {toast && <Toast message={toast.message} type={toast.type} onClose={hideToast} />}
+      <ToastContainer toasts={toasts} onClose={hideToast} />
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <div className="flex items-center gap-4 mb-6">
+        <div className="flex items-center gap-4 mb-2">
           <Link to="/admin/dashboard" className="text-slate-500 hover:text-slate-900">
              <ArrowLeft className="w-5 h-5" />
           </Link>
-          <h1 className="text-2xl font-bold text-slate-900">Manage Requests</h1>
+          <div className="flex flex-col">
+            <h1 className="text-2xl font-bold text-slate-900">Manage Requests</h1>
+            <LiveIndicator 
+              isPolling={isPolling}
+              lastUpdated={lastUpdated}
+              interval={30}
+            />
+          </div>
         </div>
 
         <div className="bg-white shadow-sm border border-slate-200 rounded-lg mb-8">

@@ -3,7 +3,7 @@ import { FileText, Download, ExternalLink, Trash2, Search, Filter, X } from 'luc
 import api from '../../api/axios';
 import Navbar from '../../components/layout/Navbar';
 import { DOCUMENT_TYPES, STATUS_COLORS, STATUS_LABELS } from '../../data/constants';
-import { Toast } from '../../components/ui/Toast';
+import { ToastContainer } from '../../components/ui/Toast';
 import { useToast } from '../../hooks/useToast';
 import { LoadingSpinner } from '../../components/ui/LoadingSpinner';
 import { ConfirmDialog } from '../../components/ui/ConfirmDialog';
@@ -47,7 +47,7 @@ const AdminDocuments = () => {
   const [search, setSearch] = useState('');
   const [typeFilter, setTypeFilter] = useState('');
   const [statusFilter, setStatusFilter] = useState('');
-  const { toast, showToast, hideToast } = useToast();
+  const { toasts, showToast, hideToast } = useToast();
   const [documentToDelete, setDocumentToDelete] = useState<string | null>(null);
 
   const fetchDocuments = async () => {
@@ -103,7 +103,7 @@ const AdminDocuments = () => {
   return (
     <div className="min-h-screen bg-slate-50 font-sans">
       <Navbar />
-      {toast && <Toast message={toast.message} type={toast.type} onClose={hideToast} />}
+      <ToastContainer toasts={toasts} onClose={hideToast} />
       
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <div className="mb-8">

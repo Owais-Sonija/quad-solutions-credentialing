@@ -2,12 +2,78 @@ import { Request, Response } from 'express';
 import bcrypt from 'bcrypt';
 import jwt from 'jsonwebtoken';
 import pool from '../config/db';
+import { containsBlockedContent, sanitizeText } from '../middleware/contentFilter.middleware';
 
 const JWT_SECRET = process.env.JWT_SECRET || 'fallback_secret';
+
+const DEMO_EMAIL = 'demo@quadsolutions.com';
+const MAX_DEMO_REQUESTS = 20;
+const CLEANUP_COUNT = 5;
+
+export const cleanupDemoRequests = async () => {
+  try {
+    // Get demo user id
+    const userResult = await pool.query(
+      'SELECT id FROM users WHERE email = $1',
+      [DEMO_EMAIL]
+    );
+    if (!userResult.rows[0]) return;
+
+    const demoUserId = userResult.rows[0].id;
+
+    // Count demo user requests
+    const countResult = await pool.query(
+      'SELECT COUNT(*)::int as count FROM credentialing_requests WHERE user_id = $1',
+      [demoUserId]
+    );
+    const count = countResult.rows[0].count;
+
+    // If over limit, delete oldest requests
+    if (count >= MAX_DEMO_REQUESTS) {
+      await pool.query(`
+        DELETE FROM credentialing_requests 
+        WHERE id IN (
+          SELECT id FROM credentialing_requests 
+          WHERE user_id = $1
+          ORDER BY submitted_at ASC
+          LIMIT $2
+        )
+      `, [demoUserId, CLEANUP_COUNT]);
+      console.log('Demo cleanup: removed oldest requests');
+    }
+  } catch (err) {
+    console.error('Demo cleanup error:', err);
+  }
+};
 
 export const registerUser = async (req: Request, res: Response) => {
   try {
     const { name, email, password, phone } = req.body;
+
+    if (containsBlockedContent(name)) {
+      return res.status(400).json({ 
+        message: 'Name contains inappropriate content' 
+      });
+    }
+    const sanitizedName = sanitizeText(name);
+
+    const nameRegex = /^[a-zA-Z\s\-'\.]+$/;
+    if (!nameRegex.test(sanitizedName.trim())) {
+      return res.status(400).json({ 
+        message: 'Name must contain English letters only' 
+      });
+    }
+
+    if (sanitizedName.trim().length < 2) {
+      return res.status(400).json({ 
+        message: 'Name must be at least 2 characters' 
+      });
+    }
+    if (sanitizedName.trim().length > 100) {
+      return res.status(400).json({ 
+        message: 'Name must not exceed 100 characters' 
+      });
+    }
 
     // Check if user already exists
     const existingUser = await pool.query('SELECT * FROM users WHERE email = $1', [email]);
@@ -21,7 +87,7 @@ export const registerUser = async (req: Request, res: Response) => {
     // Insert user
     const result = await pool.query(
       'INSERT INTO users (name, email, password_hash, phone) VALUES ($1, $2, $3, $4) RETURNING id, name, email',
-      [name, email, passwordHash, phone || null]
+      [sanitizedName, email, passwordHash, phone || null]
     );
 
     const user = result.rows[0];
@@ -163,14 +229,21 @@ export const updateProfile = async (req: Request, res: Response) => {
 
 export const changePassword = async (req: Request, res: Response) => {
   try {
-    const userId = (req as any).user?.id;
     const { currentPassword, newPassword } = req.body;
+    const userId = req.user!.id;
 
-    const userResult = await pool.query('SELECT password_hash FROM users WHERE id = $1', [userId]);
+    // Get current user details
+    const userResult = await pool.query('SELECT * FROM users WHERE id = $1', [userId]);
     const user = userResult.rows[0];
-
     if (!user) {
       return res.status(404).json({ message: 'User not found' });
+    }
+
+    const DEMO_EMAILS = ['demo@quadsolutions.com'];
+    if (DEMO_EMAILS.includes(user.email)) {
+      return res.status(403).json({ 
+        message: 'Password cannot be changed for demo accounts. Please create your own account.' 
+      });
     }
 
     const isValidPassword = await bcrypt.compare(currentPassword, user.password_hash);

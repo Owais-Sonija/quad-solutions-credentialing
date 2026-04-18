@@ -23,15 +23,16 @@ const Navbar = () => {
     <nav className={`${isAdmin ? 'bg-blue-900 border-blue-800' : 'bg-blue-700 border-blue-600'} shadow-sm border-b transition-colors`}>
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex justify-between h-16 items-center">
-          <div className="flex items-center gap-2">
-            <Building2 className="w-6 h-6 text-white" />
-            <span className="text-lg font-bold text-white tracking-tight">Quad Solutions</span>
-          </div>
+          <Link to={isAdmin ? "/admin/dashboard" : "/dashboard"} className="flex items-center gap-2 font-bold text-white text-xl hover:text-blue-100 transition-colors">
+            <span className="font-black text-2xl">+</span>
+            Quad Solutions
+          </Link>
           
           <div className="hidden md:flex items-center gap-6">
             {isAdmin ? (
               <>
                 <Link to="/admin/dashboard" className="text-sm font-medium text-blue-100 hover:text-white transition-colors">Dashboard</Link>
+                <Link to="/admin/analytics" className="text-sm font-medium text-blue-100 hover:text-white transition-colors">Analytics</Link>
                 <Link to="/admin/requests" className="text-sm font-medium text-blue-100 hover:text-white transition-colors">Requests</Link>
                 <Link to="/admin/users" className="text-sm font-medium text-blue-100 hover:text-white transition-colors">Users</Link>
                 <Link to="/admin/documents" className="text-sm font-medium text-blue-100 hover:text-white transition-colors">Documents</Link>
@@ -77,6 +78,7 @@ const Navbar = () => {
             {isAdmin ? (
               <>
                 <Link to="/admin/dashboard" className="block px-3 py-2 text-base font-medium text-white hover:bg-white/10 rounded-md">Dashboard</Link>
+                <Link to="/admin/analytics" className="block px-3 py-2 text-base font-medium text-white hover:bg-white/10 rounded-md">Analytics</Link>
                 <Link to="/admin/requests" className="block px-3 py-2 text-base font-medium text-white hover:bg-white/10 rounded-md">Requests</Link>
                 <Link to="/admin/users" className="block px-3 py-2 text-base font-medium text-white hover:bg-white/10 rounded-md">Users</Link>
                 <Link to="/admin/documents" className="block px-3 py-2 text-base font-medium text-white hover:bg-white/10 rounded-md">Documents</Link>
