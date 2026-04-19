@@ -13,9 +13,9 @@ const ALLOWED_EXTENSIONS = ['.pdf', '.jpg', '.jpeg', '.png'];
 const MAX_FILE_SIZE = 1 * 1024 * 1024;  // 1MB
 
 const fileFilter = (
-  req: Request, 
-  file: Express.Multer.File, 
-  cb: multer.FileFilterCallback
+  req: any, 
+  file: any, 
+  cb: any
 ) => {
   if (!ALLOWED_MIME_TYPES.includes(file.mimetype)) {
     cb(new Error('Only PDF, JPG and PNG files are allowed'));
@@ -44,10 +44,10 @@ const fileFilter = (
 };
 
 const storage = multer.diskStorage({
-  destination: (req, file, cb) => {
+  destination: (req: any, file: any, cb: any) => {
     cb(null, 'uploads/');
   },
-  filename: (req, file, cb) => {
+  filename: (req: any, file: any, cb: any) => {
     const ext = path.extname(file.originalname).toLowerCase();
     const safeName = path.basename(file.originalname, ext)
       .replace(/[^a-zA-Z0-9\-_\s]/g, '')

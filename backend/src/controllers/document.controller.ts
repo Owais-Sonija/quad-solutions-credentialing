@@ -7,7 +7,7 @@ export const uploadDocument = async (req: Request, res: Response) => {
     const { id: requestId } = req.params;
     const { doc_type } = req.body;
 
-    const files = req.files as Express.Multer.File[] 
+    const files = req.files as any[] 
       ?? (req.file ? [req.file] : []);
 
     if (!files || files.length === 0) {
