@@ -50,7 +50,7 @@ export const uploadDocument = async (req: Request, res: Response) => {
           file.filename,
           file.originalname,
           file.path,
-          file.size,
+          file.size || 0,
           doc_type || 'other'
         ]
       );

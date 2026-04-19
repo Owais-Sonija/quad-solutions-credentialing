@@ -200,10 +200,10 @@ const AdminRequestDetail = () => {
                         </div>
                       </div>
                       <div className="flex items-center gap-2">
-                        <a href={`${(import.meta.env.VITE_API_URL || 'http://localhost:5000/api').replace('/api', '')}/uploads/${doc.filename || doc.file_name}`} target="_blank" rel="noopener noreferrer" className="flex items-center text-blue-600 hover:text-blue-800 text-sm font-medium bg-blue-50 px-3 py-1.5 rounded transition-colors" title="View">
+                        <a href={doc.filepath} target="_blank" rel="noopener noreferrer" className="flex items-center text-blue-600 hover:text-blue-800 text-sm font-medium bg-blue-50 px-3 py-1.5 rounded transition-colors" title="View">
                           <ExternalLink className="w-4 h-4 sm:mr-1" /> <span className="hidden sm:inline">View</span>
                         </a>
-                        <a href={`${(import.meta.env.VITE_API_URL || 'http://localhost:5000/api').replace('/api', '')}/uploads/${doc.filename || doc.file_name}`} download={doc.original_name || doc.file_name} className="flex items-center text-green-600 hover:text-green-800 text-sm font-medium bg-green-50 px-3 py-1.5 rounded transition-colors" title="Download">
+                        <a href={doc.filepath} download={doc.original_name || doc.file_name} className="flex items-center text-green-600 hover:text-green-800 text-sm font-medium bg-green-50 px-3 py-1.5 rounded transition-colors" title="Download">
                           <Download className="w-4 h-4 sm:mr-1" /> <span className="hidden sm:inline">Download</span>
                         </a>
                         <button 

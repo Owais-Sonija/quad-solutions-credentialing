@@ -201,7 +201,7 @@ const RequestDetail = () => {
                           <p className="text-xs text-slate-500">{formatDocType((doc as any).doc_type || doc.document_type)} &bull; {formatDate((doc as any).uploaded_at)}</p>
                         </div>
                       </div>
-                      <a href={`${(import.meta.env.VITE_API_URL || 'http://localhost:5000/api').replace('/api', '')}/uploads/${(doc as any).filename || doc.file_name}`} target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline hover:text-blue-800 text-sm font-medium">View Document</a>
+                      <a href={(doc as any).filepath} target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline hover:text-blue-800 text-sm font-medium">View Document</a>
                     </li>
                   ))}
                 </ul>

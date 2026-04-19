@@ -3,6 +3,7 @@ import bcrypt from 'bcrypt';
 import pool from '../config/db';
 import fs from 'fs';
 import path from 'path';
+import cloudinary from '../config/cloudinary';
 
 export const getAllRequests = async (req: Request, res: Response): Promise<void> => {
   try {
@@ -257,16 +258,23 @@ export const deleteDocument = async (req: Request, res: Response): Promise<void>
 
     const doc = getResult.rows[0];
 
-    const deleteQuery = `DELETE FROM documents WHERE id = $1`;
-    await pool.query(deleteQuery, [id]);
-
     if (doc.filename) {
-      // Assuming frontend uploads went to project root /uploads or backend root /uploads
-      const filepath = path.join(process.cwd(), 'uploads', doc.filename);
-      if (fs.existsSync(filepath)) {
-         fs.unlinkSync(filepath);
+      try {
+        await cloudinary.uploader.destroy(
+          doc.filename,
+          { resource_type: 'image' }
+        );
+        await cloudinary.uploader.destroy(
+          doc.filename,
+          { resource_type: 'raw' }
+        );
+      } catch (err) {
+        console.error('Cloudinary delete error:', err);
       }
     }
+
+    const deleteQuery = `DELETE FROM documents WHERE id = $1`;
+    await pool.query(deleteQuery, [id]);
 
     res.status(200).json({ message: 'Document deleted successfully' });
   } catch (error) {

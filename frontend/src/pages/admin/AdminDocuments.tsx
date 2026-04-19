@@ -13,6 +13,7 @@ interface Document {
   request_id: string;
   original_name: string;
   filename: string;
+  filepath: string;
   doc_type: string;
   uploaded_at: string;
   specialty: string;
@@ -217,7 +218,7 @@ const AdminDocuments = () => {
                   </tr>
                 ) : (
                   (filteredDocs ?? []).map((doc) => {
-                    const fileUrl = `${import.meta.env.VITE_API_URL.replace('/api', '')}/uploads/${doc.filename}`;
+                    const fileUrl = doc.filepath;
                     return (
                       <tr key={doc.id} className="hover:bg-slate-50/50 transition-colors">
                         <td className="px-6 py-4">
