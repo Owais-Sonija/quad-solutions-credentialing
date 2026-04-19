@@ -224,7 +224,7 @@ const AdminAnalytics = () => {
                           ))
                         }
                       </Pie>
-                      <Tooltip formatter={(value: any) => [`${value}`, '']} />
+                      <Tooltip formatter={(value: any) => [String(value), '']} />
                       <Legend />
                     </PieChart>
                   </ResponsiveContainer>
