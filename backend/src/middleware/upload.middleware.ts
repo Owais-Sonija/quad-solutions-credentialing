@@ -1,5 +1,6 @@
 import multer from 'multer';
 import path from 'path';
+import fs from 'fs';
 import { Request } from 'express';
 
 const ALLOWED_MIME_TYPES = [
@@ -45,7 +46,11 @@ const fileFilter = (
 
 const storage = multer.diskStorage({
   destination: (req: any, file: any, cb: any) => {
-    cb(null, 'uploads/');
+    const uploadsDir = path.join(__dirname, '..', '..', 'uploads')
+    if (!fs.existsSync(uploadsDir)) {
+      fs.mkdirSync(uploadsDir, { recursive: true })
+    }
+    cb(null, uploadsDir)
   },
   filename: (req: any, file: any, cb: any) => {
     const ext = path.extname(file.originalname).toLowerCase();
