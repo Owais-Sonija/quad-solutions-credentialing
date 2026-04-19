@@ -29,10 +29,20 @@ const fileFilter = (
     return;
   }
 
-  const nameWithoutExt = path.basename(file.originalname, ext);
-  if (nameWithoutExt.includes('.')) {
-    cb(new Error('Invalid filename - double extensions not allowed'));
-    return;
+  // Check for actual double extensions like file.pdf.exe
+  const parts = file.originalname.split('.')
+  if (parts.length > 2) {
+    // More than one dot - check if second-to-last is also 
+    // a known extension
+    const secondExt = '.' + parts[parts.length - 2].toLowerCase()
+    const dangerousExts = [
+      '.exe', '.php', '.js', '.sh', '.bat', '.cmd', 
+      '.ps1', '.py', '.rb', '.pl'
+    ]
+    if (dangerousExts.includes(secondExt)) {
+      cb(new Error('Invalid filename - suspicious file extension'))
+      return
+    }
   }
 
   const maliciousPattern = /[<>:"/\\|?*\x00-\x1f]/g;

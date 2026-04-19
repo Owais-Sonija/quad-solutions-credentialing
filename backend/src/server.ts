@@ -53,6 +53,7 @@ const seedDemoAccounts = async () => {
 seedDemoAccounts()
 
 const app = express();
+app.set('trust proxy', 1)
 
 // Middleware
 app.use(timeout('30s'));
@@ -68,24 +69,19 @@ app.use(express.urlencoded({ extended: true, limit: '1mb' }));
 
 // Global rate limit - applies to ALL routes
 const globalLimiter = rateLimit({
-  windowMs: 15 * 60 * 1000,  // 15 minutes
-  max: 200,  // increased from 100 to 200
-  message: { 
-    message: 'Too many requests. Please try again later.' 
-  },
-  skip: (req) => {
-    // Skip rate limiting for static files
-    return req.path.startsWith('/uploads/')
-  }
+  windowMs: 15 * 60 * 1000,
+  max: 200,
+  standardHeaders: true,
+  legacyHeaders: false,
+  skip: (req) => req.path.startsWith('/uploads/')
 })
 
 // Strict limit for auth routes
 const authLimiter = rateLimit({
   windowMs: 15 * 60 * 1000,
-  max: 15,  // 15 login attempts per 15 min (increased from 10)
-  message: { 
-    message: 'Too many login attempts. Please try again in 15 minutes.' 
-  }
+  max: 15,
+  standardHeaders: true,
+  legacyHeaders: false
 })
 
 // Apply global limiter to all routes

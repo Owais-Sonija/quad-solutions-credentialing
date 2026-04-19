@@ -17,13 +17,12 @@ router.get('/requests', getMyRequests);
 router.get('/requests/:id', getRequestById);
 
 const uploadLimiter = rateLimit({
-  windowMs: 60 * 60 * 1000,  // 1 hour window
-  max: 20,                    // 20 uploads per hour per IP
+  windowMs: 60 * 60 * 1000,
+  max: 20,
+  standardHeaders: true,
+  legacyHeaders: false,
   message: { 
     message: 'Upload limit reached. Maximum 20 uploads per hour.' 
-  },
-  keyGenerator: (req: any) => {
-    return req.user?.id?.toString() || 'anonymous';
   }
 })
 
