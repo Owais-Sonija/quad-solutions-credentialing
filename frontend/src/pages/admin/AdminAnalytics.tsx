@@ -224,11 +224,7 @@ const AdminAnalytics = () => {
                           ))
                         }
                       </Pie>
-                      <Tooltip formatter={(value: number, name: string, props: any) => {
-                        const total = data.overview.total_requests;
-                        const percent = ((value / total) * 100).toFixed(1);
-                        return [`${value} (${percent}%)`, name];
-                      }} />
+                      <Tooltip formatter={(value: any) => [`${value}`, '']} />
                       <Legend />
                     </PieChart>
                   </ResponsiveContainer>
@@ -325,7 +321,7 @@ const AdminAnalytics = () => {
                         outerRadius={90}
                         dataKey="value"
                         labelLine={false}
-                        label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`}
+                        label={({ name, percent }) => `${name} ${((percent ?? 0) * 100).toFixed(0)}%`}
                       >
                         {
                           [
